@@ -1,66 +1,41 @@
-## Foundry
+# Safe Anonymization Mail Module (SAMM)
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+## Description
 
-Foundry consists of:
+This is an implementation of the contract for the Noir grant.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+Our key concept is centered around the creation of a module for Safe multisig that ensures the anonymity of all its participants using ZK-SNARK technology.
 
-## Documentation
+The details are described in:
 
-https://book.getfoundry.sh/
+- [Technical docs](https://www.notion.so/oxorioteam/SAMM-technical-requirements-7c42604654ba408ea68176fb609cf04b)
 
-## Usage
+## Requirements
 
-### Build
+- Foundry
 
-```shell
-$ forge build
+## Installation
+
+To get started with this project, you need to install Foundry. Follow the instructions [here](https://book.getfoundry.sh/getting-started/installation).
+
+```bash
+forge install
 ```
 
-### Test
+## Testing
 
-```shell
-$ forge test
+Before running tests, you will need to set up an `.env` file in the project root with an Ethereum API key. Create a `.env` file and add the following:
+
+```
+MAINNET_RPC={your-ethereum-api-key}
 ```
 
-### Format
+Replace `your-ethereum-api-key` with your actual API key. Then, you can run tests with the following command:
 
-```shell
-$ forge fmt
+```bash
+forge test
 ```
 
-### Gas Snapshots
+## License
 
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
