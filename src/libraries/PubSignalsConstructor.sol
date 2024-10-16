@@ -38,33 +38,27 @@ library PubSignalsConstructor {
         msgHash = keccak256(abi.encode(to, value, calldataHash, operation, nonce, address(this), block.chainid));
     }
 
-    function getPubSignalsAndMsgHash(
+    function getPubSignals(
         uint256 participantsRoot,
+        string memory relayer,
         address to,
         uint256 value,
         bytes memory data,
         ISafe.Operation operation,
         uint256 nonce
     ) internal view returns (bytes32[] memory pubSignals) {
-        // public signals order:
-        //  root: pub Field
-        //  padded_relayer: pub [u8; MAX_EMAIL_ADDRESS_LENGTH]
-        //  relayer_length: pub u32,
-        //  msg_hash: pub [u8; MSG_HASH_LENGTH]
-        //  pubkey_modulus_limbs: pub [Field; KEY_LIMBS_1024]
-        //  redc_params_limbs: pub [Field; KEY_LIMBS_1024]
-
+        // public signals order: root, relayer, relayer_len, msg_hash, pubkey_mod, redc_params
         pubSignals = new bytes32[](113);
 
         // root
         pubSignals[0] = bytes32(participantsRoot);
 
-        // relayer - TODO
-        uint8[31] memory relayer = [97, 100, 64, 111, 120, 111, 114, 46, 105, 111, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        // relayer
+        bytes32 relayerBytes32 = bytes32(bytes(relayer));
         for (uint256 i = 0; i < 31; i++) {
-            pubSignals[1+i] = bytes32(uint256(relayer[i]));
+            pubSignals[1+i] = bytes32(uint256(uint8(relayerBytes32[i])));
         }
-        pubSignals[32] = bytes32(uint256(10));
+        pubSignals[32] = bytes32(uint256(bytes(relayer).length));
 
         // msgHash - TODO
         uint8[44] memory msgHash = [119, 70, 50, 115, 90, 68, 120, 52, 109, 99, 75, 54, 65, 115, 74, 88, 84, 74, 77, 82, 103, 83, 111, 99, 115, 67, 112, 50, 50, 87, 87, 102, 90, 119, 120, 120, 119, 82, 72, 106, 103, 112, 48, 61];

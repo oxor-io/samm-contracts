@@ -51,6 +51,8 @@ contract SAMM is Singleton, ISAMM {
     ISafe private s_safe;
     // The value of type(uint64).max is large enough to hold the maximum possible amount of proofs.
     uint64 private s_threshold;
+    // Relayer email address
+    string private s_relayer;
 
     // The root of the Merkle tree from the addresses of all SAM participants (using MimcSpoonge)
     uint256 private s_participantsRoot;
@@ -79,7 +81,7 @@ contract SAMM is Singleton, ISAMM {
      * @param participantsRoot The Merkle root of participant addresses.
      * @param threshold The minimum number of proofs required to execute a transaction.
      */
-    function setup(address safe, uint256 participantsRoot, uint64 threshold) external {
+    function setup(address safe, uint256 participantsRoot, uint64 threshold, string calldata relayer) external {
         if (s_threshold != 0) {
             revert SAMM__alreadyInitialized();
         }
@@ -97,11 +99,16 @@ contract SAMM is Singleton, ISAMM {
             if (threshold == 0) {
                 revert SAMM__thresholdIsZero();
             }
+
+            if (bytes(relayer).length == 0) {
+                revert SAMM__emptyRelayer();
+            }
         }
 
         s_safe = ISafe(safe);
         s_participantsRoot = participantsRoot;
         s_threshold = threshold;
+        s_relayer = relayer;
 
         emit Setup(msg.sender, safe, participantsRoot, threshold);
     }
@@ -179,6 +186,12 @@ contract SAMM is Singleton, ISAMM {
         return s_threshold;
     }
 
+    /// @notice Retrieves the relayer email address.
+    /// @return relayer The current relayer email address.
+    function getRelayer() external view returns (string memory relayer) {
+        return s_relayer;
+    }
+
     /// @notice Retrieves the current nonce value.
     /// @return nonce The current nonce.
     function getNonce() external view returns (uint256 nonce) {
@@ -220,8 +233,8 @@ contract SAMM is Singleton, ISAMM {
         }
 
         // pubSignals = [commit, root, msg hash by chunks]
-        bytes32[] memory pubSignals = PubSignalsConstructor.getPubSignalsAndMsgHash(
-            root, to, value, data, operation, s_nonce++);
+        bytes32[] memory pubSignals = PubSignalsConstructor.getPubSignals(
+            root, s_relayer, to, value, data, operation, s_nonce++);
 
         if (s_threshold > proofs.length) {
             revert SAMM__notEnoughProofs(proofs.length, s_threshold);

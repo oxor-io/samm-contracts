@@ -24,6 +24,7 @@ interface ISAMMErrors {
     error SAMM__safeIsZero();
     error SAMM__rootIsZero();
     error SAMM__thresholdIsZero();
+    error SAMM__emptyRelayer();
     error SAMM__notEnoughProofs(uint256 amountOfGivenProofs, uint256 threshold);
     error SAMM__commitAlreadyUsed(uint256 usedCommitIndex);
     error SAMM__proofVerificationFailed(uint256 failedProofIndex);

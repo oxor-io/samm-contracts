@@ -23,6 +23,7 @@ contract Setup is Test {
         13478250241025044241834632636828135155416924205892387731890373634766567630611; // From 10 default anvil accounts
 
     uint64 internal constant DEFAULT_THRESHOLD = 1;
+    string internal constant DEFAULT_RELAYER = "ad@oxor.io";
     bytes internal constant DEFAULT_CALLDATA = abi.encodeWithSignature("getThreshold()");
     uint256 internal constant DEFAULT_SALT = uint256(keccak256(abi.encode(777)));
     bytes32 internal constant DEFAULT_TX_HASH = 0x09b086d54be973c0cae8f289b9a308969c3a0d336ba3000651cffcde84ce5fb3;
@@ -66,7 +67,7 @@ contract Setup is Test {
         samProxyFactory = new SafeProxyFactory();
 
         bytes memory initializeDataSAM =
-            abi.encodeCall(SAMM.setup, (address(safe), DEFAULT_ROOT, DEFAULT_THRESHOLD));
+            abi.encodeCall(SAMM.setup, (address(safe), DEFAULT_ROOT, DEFAULT_THRESHOLD, DEFAULT_RELAYER));
 
         sam = createSAM(initializeDataSAM, DEFAULT_SALT);
     }

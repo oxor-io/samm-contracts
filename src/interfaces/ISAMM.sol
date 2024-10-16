@@ -34,7 +34,7 @@ interface ISAMM is
         uint256 commit;
     }
 
-    function setup(address safe, uint256 participantsRoot, uint64 threshold) external;
+    function setup(address safe, uint256 participantsRoot, uint64 threshold, string calldata relayer) external;
 
     function executeTransaction(
         address to,
