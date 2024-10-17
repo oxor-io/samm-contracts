@@ -19,7 +19,6 @@
 pragma solidity 0.8.23;
 
 interface ISAMMErrors {
-    // TODO refactor errors
     error SAMM__alreadyInitialized();
     error SAMM__safeIsZero();
     error SAMM__rootIsZero();
@@ -29,10 +28,7 @@ interface ISAMMErrors {
     error SAMM__commitAlreadyUsed(uint256 usedCommitIndex);
     error SAMM__proofVerificationFailed(uint256 failedProofIndex);
     error SAMM__notSafe();
-    error SAMM__fileArgIsZero();
-    error SAMM__invalidFileParameter(bytes32 what);
-    error SAMM__thresholdIsTooBig();
-    error SAMM__hashApproveToInvalidNonce();
-    error SAMM__proofsLengthIsZero();
     error SAMM__deadlineIsPast();
+    error SAMM__dkimRegistryIsZero();
+    error SAMM__DKIMPublicKeyVerificationFailed(uint256 commitIndex);
 }

@@ -24,7 +24,7 @@ import {ISafe} from "../Safe/interfaces/ISafe.sol";
 interface ISAMMGetters {
     function getSafe() external view returns (address safe);
 
-    function getParticipantsRoot() external view returns (uint256 root);
+    function getMembersRoot() external view returns (uint256 root);
 
     function getThreshold() external view returns (uint64 threshold);
 
