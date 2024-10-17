@@ -24,20 +24,21 @@ contract ModuleGuard is Singleton, BaseModuleGuard {
     }
 
     event Setup(address indexed initiator, address indexed safe);
-    event AlowanceChanged(address indexed to, uint256 amount);
+    event AllowanceChanged(address indexed to, uint256 amount);
     event TxAllowanceChanged(address indexed to, bytes4 indexed selector, bool isAllowed);
-    event ModuleTransactionDetails(bytes32 indexed txHash, address to, uint256 value, bytes data, Enum.Operation operation, address module);
 
     error ModuleGuard__alreadyInitialized();
     error ModuleGuard__txIsNotAllowed();
     error ModuleGuard__allowanceIsNotEnough();
     error ModuleGuard__safeIsZero();
+    error ModuleGuard__notSafe();
+    error ModuleGuard__toIsWrong();
+    error ModuleGuard__noChanges();
 
     //////////////////////
     // State Variables  //
     //////////////////////
 
-    // TODO: is the safe address need for the guard module?
     ISafe private safe;
 
     // A whitelist of contract addresses and function signatures
@@ -83,15 +84,31 @@ contract ModuleGuard is Singleton, BaseModuleGuard {
     }
 
     function setTxAllowed(address to, bytes4 selector, bool isAllowed) external {
-        // TODO: validation
+        if (msg.sender != address(safe)) {
+            revert ModuleGuard__notSafe();
+        }
+        if (to == address(safe) || to == address(0)) {
+            revert ModuleGuard__toIsWrong();
+        }
+        if (isAllowed == isTxAllowed[to][selector]) {
+            revert ModuleGuard__noChanges();
+        }
         isTxAllowed[to][selector] = isAllowed;
         emit TxAllowanceChanged(to, selector, isAllowed);
     }
 
     function setAllowance(address to, uint256 amount) external {
-        // TODO: validation
+        if (msg.sender != address(safe)) {
+            revert ModuleGuard__notSafe();
+        }
+        if (to == address(safe) || to == address(0)) {
+            revert ModuleGuard__toIsWrong();
+        }
+        if (amount == allowance[to]) {
+            revert ModuleGuard__noChanges();
+        }
         allowance[to] = amount;
-        emit AlowanceChanged(to, amount);
+        emit AllowanceChanged(to, amount);
     }
 
     /**
@@ -109,8 +126,7 @@ contract ModuleGuard is Singleton, BaseModuleGuard {
         bytes memory data,
         Enum.Operation operation,
         address module
-    ) external override returns (bytes32 moduleTxHash) {
-        // TODO: check operation: call/delegateCall?
+    ) external view override returns (bytes32 moduleTxHash) {
         bytes4 selector = _getABISig(data);
         if (isTxAllowed[to][selector]) {
             revert ModuleGuard__txIsNotAllowed();
@@ -120,7 +136,6 @@ contract ModuleGuard is Singleton, BaseModuleGuard {
         }
 
         moduleTxHash = keccak256(abi.encodePacked(to, value, data, operation, module));
-        emit ModuleTransactionDetails(moduleTxHash, to, value, data, operation, module);
     }
 
     /**
