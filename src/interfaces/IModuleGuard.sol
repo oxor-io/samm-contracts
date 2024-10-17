@@ -3,12 +3,25 @@
 pragma solidity >=0.7.0 <0.9.0;
 import {IERC165} from "./IERC165.sol";
 import {Enum} from "./../libraries/Enum.sol";
+import {IModuleGuardErrors} from "./IModuleGuardErrors.sol";
+import {IModuleGuardEvents} from "./IModuleGuardEvents.sol";
+import {IModuleGuardGetters} from "./IModuleGuardGetters.sol";
 
 
 /**
  * @title IModuleGuard Interface
  */
-interface IModuleGuard is IERC165 {
+interface IModuleGuard is
+    IERC165,
+    IModuleGuardEvents,
+    IModuleGuardErrors,
+    IModuleGuardGetters
+{
+
+    function setup(address _safe) external;
+    function setTxAllowed(address module, address to, bytes4 selector, bool isAllowed) external;
+    function setAllowance(address module, address to, uint256 amount) external;
+
     /**
      * @notice Checks the module transaction details.
      * @dev The function needs to implement module transaction validation logic.
