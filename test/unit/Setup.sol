@@ -8,6 +8,7 @@ import {SafeProxyFactory} from "../../src/Safe/proxy/SafeProxyFactory.sol";
 import {ISafe} from "../../src/Safe/interfaces/ISafe.sol";
 import {IMinimalSafeModuleManager} from "../../src/Safe/interfaces/IMinimalSafeModuleManager.sol";
 import {ArrHelper} from "../helpers/ArrHelper.sol";
+import {DKIMRegistry} from "zk-email-verify/packages/contracts/DKIMRegistry.sol";
 
 contract Setup is Test {
     //////////////////////
@@ -24,6 +25,8 @@ contract Setup is Test {
 
     uint64 internal constant DEFAULT_THRESHOLD = 1;
     string internal constant DEFAULT_RELAYER = "ad@oxor.io";
+    string internal constant DEFAULT_DOMAIN = "icloud.com";
+    bytes32 internal constant DEFAULT_PUBKEY_HASH = 0x09b086d54be973c0cae8f289b9a308969c3a0d336ba3000651cffcde84ce5fb3;
     bytes internal constant DEFAULT_CALLDATA = abi.encodeWithSignature("getThreshold()");
     uint256 internal constant DEFAULT_DEADLINE = 4884818384; // Tue Oct 17 2124 05:59:44
     uint256 internal constant DEFAULT_SALT = uint256(keccak256(abi.encode(777)));
@@ -35,6 +38,9 @@ contract Setup is Test {
 
     // Safe
     ISafe internal safe;
+
+    // DKIM registry
+    IDKIMRegistry internal dkimRegistry;
 
     // SAM
     SAMM internal sam;
@@ -63,12 +69,15 @@ contract Setup is Test {
     function setUp() public virtual fork("MAINNET_RPC") {
         safe = createMinimalSafeWallet(ArrHelper._arr(address(this)), DEFAULT_THRESHOLD, DEFAULT_SALT);
 
+        dkimRegistry = new DKIMRegistry(address(this));
+        dkimRegistry.setDKIMPublicKeyHash(DEFAULT_DOMAIN, DEFAULT_PUBKEY_HASH);
+
         // Create SAM module
         samSingleton = new SAMM();
         samProxyFactory = new SafeProxyFactory();
 
         bytes memory initializeDataSAM =
-            abi.encodeCall(SAMM.setup, (address(safe), DEFAULT_ROOT, DEFAULT_THRESHOLD, DEFAULT_RELAYER));
+            abi.encodeCall(SAMM.setup, (address(safe), DEFAULT_ROOT, DEFAULT_THRESHOLD, DEFAULT_RELAYER, address(dkimRegistry)));
 
         sam = createSAM(initializeDataSAM, DEFAULT_SALT);
     }

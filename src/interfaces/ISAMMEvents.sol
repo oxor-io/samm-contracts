@@ -19,6 +19,7 @@
 pragma solidity 0.8.23;
 
 interface ISAMMEvents {
-    event Setup(address indexed initiator, address indexed safe, uint256 initialSetupRoot, uint64 threshold);
+    event Setup(address indexed initiator, address indexed safe, 
+        uint256 initialSetupRoot, uint64 threshold, string relayer, address dkimRegistry);
     // TODO more events
 }

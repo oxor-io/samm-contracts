@@ -30,6 +30,7 @@ import {PubSignalsConstructor} from "./libraries/PubSignalsConstructor.sol";
 // Interfaces
 import {ISAMM} from "./interfaces/ISAMM.sol";
 import {ISafe} from "./Safe/interfaces/ISafe.sol";
+import {IDKIMRegistry} from "zk-email-verify/packages/contracts/interfaces/IDKIMRegistry.sol";
 
 /// @title Safe Anonymization Mail Module
 /// @author Vladimir Kumalagov (@KumaCrypto)
@@ -53,10 +54,10 @@ contract SAMM is Singleton, ISAMM {
     uint64 private s_threshold;
     // Relayer email address
     string private s_relayer;
-
     // The root of the Merkle tree from the addresses of all SAM participants (using MimcSpoonge)
     uint256 private s_participantsRoot;
     uint256 private s_nonce;
+    IDKIMRegistry private s_dkimRegistry;
 
     //////////////////////////////
     // Functions - Constructor  //
@@ -81,7 +82,8 @@ contract SAMM is Singleton, ISAMM {
      * @param participantsRoot The Merkle root of participant addresses.
      * @param threshold The minimum number of proofs required to execute a transaction.
      */
-    function setup(address safe, uint256 participantsRoot, uint64 threshold, string calldata relayer) external {
+    function setup(address safe, uint256 participantsRoot, uint64 threshold, 
+        string calldata relayer, address dkimRegistry) external {
         if (s_threshold != 0) {
             revert SAMM__alreadyInitialized();
         }
@@ -103,14 +105,19 @@ contract SAMM is Singleton, ISAMM {
             if (bytes(relayer).length == 0) {
                 revert SAMM__emptyRelayer();
             }
+
+            if (dkimRegistry == address(0)) {
+                revert SAMM__dkimRegistryIsZero();
+            }
         }
 
         s_safe = ISafe(safe);
         s_participantsRoot = participantsRoot;
         s_threshold = threshold;
         s_relayer = relayer;
+        s_dkimRegistry = IDKIMRegistry(dkimRegistry);
 
-        emit Setup(msg.sender, safe, participantsRoot, threshold);
+        emit Setup(msg.sender, safe, participantsRoot, threshold, relayer, dkimRegistry);
     }
 
     /**
@@ -258,6 +265,14 @@ contract SAMM is Singleton, ISAMM {
 
         for (uint256 i; i < proofsLength; i++) {
             Proof memory currentProof = proofs[i];
+
+            // check DKIM public key
+            bytes32 publicKeyHash = 0x09b086d54be973c0cae8f289b9a308969c3a0d336ba3000651cffcde84ce5fb3; // TODO
+            bool isValid = s_dkimRegistry.isDKIMPublicKeyHashValid(
+                currentProof.domain, publicKeyHash);
+            if (!isValid) {
+                revert SAMM__DKIMPublicKeyVerificationFailed(i);
+            }
 
             // Commit must be uniq, because it is a hash(userEmail, msgHash)
             for (uint256 j; j < i; j++) {

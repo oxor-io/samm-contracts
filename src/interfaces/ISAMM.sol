@@ -32,6 +32,7 @@ interface ISAMM is
     struct Proof {
         bytes proof;
         uint256 commit;
+        string domain;
     }
 
     function setup(address safe, uint256 participantsRoot, uint64 threshold, string calldata relayer) external;

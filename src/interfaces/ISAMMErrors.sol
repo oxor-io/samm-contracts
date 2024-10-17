@@ -35,4 +35,6 @@ interface ISAMMErrors {
     error SAMM__hashApproveToInvalidNonce();
     error SAMM__proofsLengthIsZero();
     error SAMM__deadlineIsPast();
+    error SAMM__dkimRegistryIsZero();
+    error SAMM__DKIMPublicKeyVerificationFailed(uint256 commitIndex);
 }
