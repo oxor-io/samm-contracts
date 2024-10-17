@@ -11,6 +11,10 @@ import {SumcheckFailed} from "../../src/utils/Verifier2048.sol";
 import {SimpleContract} from "../helpers/SimpleContract.sol";
 import {SimpleContractDelegateCall} from "../helpers/SimpleContractDelegateCall.sol";
 
+import {console} from "forge-std/console.sol";
+
+import 'base64-sol/base64.sol';
+
 contract SAMExecuteTxTest is Test, Setup {
     // Correct proof must be verified and tx getThreshold executed.
     // Call must be successful and returned data correct
@@ -23,6 +27,16 @@ contract SAMExecuteTxTest is Test, Setup {
 
         assertTrue(result);
         assertEq(abi.decode(returnData, (uint256)), DEFAULT_THRESHOLD);
+
+        // string memory relayer_s = "ad@oxor.io";
+        // bytes32 stringInBytes32 = bytes32(bytes(relayer_s));
+        // console.logBytes32(stringInBytes32);
+        // console.logBytes1(stringInBytes32[0]);
+        // console.log(bytes(relayer_s).length);
+
+        bytes32 msgHash = 0xc05dac643c7899c2ba02c2574c9311812a1cb02a76d9659f670c71c111e3829d;
+        string msgHash64 = base64.encode(msgHash);
+        console.log(msgHash64);
     }
 
     // Same with the test above, but with another function.

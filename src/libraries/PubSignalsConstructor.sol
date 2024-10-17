@@ -60,7 +60,8 @@ library PubSignalsConstructor {
         }
         pubSignals[32] = bytes32(uint256(bytes(relayer).length));
 
-        // msgHash - TODO
+        // msgHash
+        // bytes32 msgHash = getMsgHash(to, value, data, operation, nonce);
         uint8[44] memory msgHash = [119, 70, 50, 115, 90, 68, 120, 52, 109, 99, 75, 54, 65, 115, 74, 88, 84, 74, 77, 82, 103, 83, 111, 99, 115, 67, 112, 50, 50, 87, 87, 102, 90, 119, 120, 120, 119, 82, 72, 106, 103, 112, 48, 61];
         for (uint256 i = 0; i < 44; i++) {
             pubSignals[33+i] = bytes32(uint256(msgHash[i]));
