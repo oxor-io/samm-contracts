@@ -14,7 +14,7 @@ contract SAMExecuteTxTest is Test, Setup {
 
     // Simply check that setup was ok
     function test_rootIsInitializedCorrectly() external {
-        assertEq(sam.getParticipantsRoot(), DEFAULT_ROOT, "Setup failed! Root does not match the default one");
+        assertEq(sam.getMembersRoot(), DEFAULT_ROOT, "Setup failed! Root does not match the default one");
     }
 
     function test_impossibleToSetupMultiplyTimes() external {

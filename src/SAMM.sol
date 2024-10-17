@@ -35,7 +35,7 @@ import {IDKIMRegistry} from "./interfaces/IDKIMRegistry.sol";
 /// @title Safe Anonymization Mail Module
 /// @author Vladimir Kumalagov (@KumaCrypto, @dry914)
 /// @notice This contract is a module for Safe Wallet (Gnosis Safe), aiming to provide anonymity for users.
-/// It allows users to execute transactions for a specified Safe without revealing the addresses of the participants who voted to execute the transaction.
+/// It allows users to execute transactions for a specified Safe without revealing the addresses of the members who voted to execute the transaction.
 /// @dev This contract should be used as a singleton. And proxy contracts must use delegatecall to use the contract logic.
 contract SAMM is Singleton, ISAMM {
     ///////////////////////
@@ -54,8 +54,8 @@ contract SAMM is Singleton, ISAMM {
     uint64 private s_threshold;
     // Relayer email address
     string private s_relayer;
-    // The root of the Merkle tree from the addresses of all SAM participants (using MimcSpoonge)
-    uint256 private s_participantsRoot;
+    // The root of the Merkle tree from the addresses of all SAM members (using Poseidon)
+    uint256 private s_membersRoot;
     uint256 private s_nonce;
     IDKIMRegistry private s_dkimRegistry;
 
@@ -79,10 +79,10 @@ contract SAMM is Singleton, ISAMM {
      *  - The contract has already been initialized.
      *  - One of the passed parameters is 0.
      * @param safe The address of the Safe.
-     * @param participantsRoot The Merkle root of participant addresses.
+     * @param membersRoot The Merkle root of participant addresses.
      * @param threshold The minimum number of proofs required to execute a transaction.
      */
-    function setup(address safe, uint256 participantsRoot, uint64 threshold, 
+    function setup(address safe, uint256 membersRoot, uint64 threshold, 
         string calldata relayer, address dkimRegistry) external {
         if (s_threshold != 0) {
             revert SAMM__alreadyInitialized();
@@ -94,7 +94,7 @@ contract SAMM is Singleton, ISAMM {
                 revert SAMM__safeIsZero();
             }
 
-            if (participantsRoot == 0) {
+            if (membersRoot == 0) {
                 revert SAMM__rootIsZero();
             }
 
@@ -112,12 +112,12 @@ contract SAMM is Singleton, ISAMM {
         }
 
         s_safe = ISafe(safe);
-        s_participantsRoot = participantsRoot;
+        s_membersRoot = membersRoot;
         s_threshold = threshold;
         s_relayer = relayer;
         s_dkimRegistry = IDKIMRegistry(dkimRegistry);
 
-        emit Setup(msg.sender, safe, participantsRoot, threshold, relayer, dkimRegistry);
+        emit Setup(msg.sender, safe, membersRoot, threshold, relayer, dkimRegistry);
     }
 
     /**
@@ -171,7 +171,65 @@ contract SAMM is Singleton, ISAMM {
         (success, returnData) = _executeTransaction(to, value, data, operation, proofs, deadline);
     }
 
-    // TODO add setters
+    /// @notice Updates threshold parameter.
+    function setThreshold(uint64 threshold) external {
+        if (msg.sender != address(s_safe)) {
+            revert SAMM__notSafe();
+        }
+
+        if (threshold == 0) {
+            revert SAMM__thresholdIsZero();
+        }
+
+        s_threshold = threshold;
+
+        emit ThresholdIsChanged(threshold);
+    }
+
+    /// @notice Updates members root parameter.
+    function setMembersRoot(uint256 membersRoot) external {
+        if (msg.sender != address(s_safe)) {
+            revert SAMM__notSafe();
+        }
+
+        if (membersRoot == 0) {
+            revert SAMM__rootIsZero();
+        }
+
+        s_membersRoot = membersRoot;
+
+        emit MembersRootIsChanged(membersRoot);
+    }
+
+    /// @notice Updates DKIM registry parameter.
+    function setDKIMRegistry(address dkimRegistry) external {
+        if (msg.sender != address(s_safe)) {
+            revert SAMM__notSafe();
+        }
+
+        if (dkimRegistry == address(0)) {
+            revert SAMM__dkimRegistryIsZero();
+        }
+
+        s_dkimRegistry = IDKIMRegistry(dkimRegistry);
+
+        emit DKIMRegistryIsChanged(dkimRegistry);
+    }
+
+    /// @notice Updates relayer email address parameter.
+    function setRelayer(string calldata relayer) external {
+        if (msg.sender != address(s_safe)) {
+            revert SAMM__notSafe();
+        }
+
+        if (bytes(relayer).length == 0) {
+            revert SAMM__emptyRelayer();
+        }
+
+        s_relayer = relayer;
+
+        emit RelayerIsChanged(relayer);
+    }
 
     //////////////////////////////
     // Functions  -   View      //
@@ -183,10 +241,10 @@ contract SAMM is Singleton, ISAMM {
         return address(s_safe);
     }
 
-    /// @notice Retrieves the current participants root.
+    /// @notice Retrieves the current members root.
     /// @return root The Merkle root of participant addresses.
-    function getParticipantsRoot() external view returns (uint256 root) {
-        return s_participantsRoot;
+    function getMembersRoot() external view returns (uint256 root) {
+        return s_membersRoot;
     }
 
     /// @notice Retrieves the threshold number of proofs required for transaction execution.
@@ -199,6 +257,12 @@ contract SAMM is Singleton, ISAMM {
     /// @return relayer The current relayer email address.
     function getRelayer() external view returns (string memory relayer) {
         return s_relayer;
+    }
+
+    /// @notice Retrieves the address of DKIMRegistry.
+    /// @return dkimRegistry The current DKIMRegistry address.
+    function getDKIMRegistry() external view returns (address dkimRegistry) {
+        return address(s_dkimRegistry);
     }
 
     /// @notice Retrieves the current nonce value.
@@ -235,7 +299,7 @@ contract SAMM is Singleton, ISAMM {
         Proof[] calldata proofs,
         uint256 deadline
     ) private returns (bool success, bytes memory returnData) {
-        uint256 root = s_participantsRoot;
+        uint256 root = s_membersRoot;
 
         // Check root to prevent calls when contract is not initialized.
         if (root == 0) {
