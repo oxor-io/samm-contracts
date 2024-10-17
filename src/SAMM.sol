@@ -255,17 +255,18 @@ contract SAMM is Singleton, ISAMM {
 
     function _checkNProofs(Proof[] calldata proofs, bytes32[] memory pubSignals) private {
         uint256 proofsLength = proofs.length;
+
         for (uint256 i; i < proofsLength; i++) {
             Proof memory currentProof = proofs[i];
 
-            // TODO - add commit public input
-            // Commit must be uniq, because it is a hash(userAddress, msgHash)
-            // if (s_isCommitUsed[currentProof.commit] != 0) {
-            //     revert SAMM__commitAlreadyUsed(i);
-            // }
-            // s_isCommitUsed[currentProof.commit] = 1;
+            // Commit must be uniq, because it is a hash(userEmail, msgHash)
+            for (uint256 j; j < i; j++) {
+                if (proofs[i].commit == currentProof.commit) {
+                    revert SAMM__commitAlreadyUsed(i);
+                }
+            }
 
-            // pubSignals[0] = currentProof.commit;
+            pubSignals[113] = bytes32(currentProof.commit);
             bool result = VERIFIER2048.verify({
                 proof: currentProof.proof,
                 publicInputs: pubSignals

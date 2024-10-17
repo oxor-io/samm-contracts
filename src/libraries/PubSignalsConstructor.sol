@@ -50,8 +50,8 @@ library PubSignalsConstructor {
         uint256 nonce,
         uint256 deadline
     ) internal view returns (bytes32[] memory pubSignals) {
-        // public signals order: root, relayer, relayer_len, msg_hash, pubkey_mod, redc_params
-        pubSignals = new bytes32[](113);
+        // public signals order: root, relayer, relayer_len, msg_hash, pubkey_mod, redc_params, commit
+        pubSignals = new bytes32[](114);
 
         // root
         pubSignals[0] = bytes32(participantsRoot);

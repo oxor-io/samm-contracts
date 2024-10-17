@@ -13,7 +13,6 @@ import {SimpleContractDelegateCall} from "../helpers/SimpleContractDelegateCall.
 
 import {console} from "forge-std/console.sol";
 
-import 'base64/base64.sol';
 
 contract SAMExecuteTxTest is Test, Setup {
     // Correct proof must be verified and tx getThreshold executed.
@@ -27,18 +26,6 @@ contract SAMExecuteTxTest is Test, Setup {
 
         assertTrue(result);
         assertEq(abi.decode(returnData, (uint256)), DEFAULT_THRESHOLD);
-
-        // string memory relayer_s = "ad@oxor.io";
-        // bytes32 stringInBytes32 = bytes32(bytes(relayer_s));
-        // console.logBytes32(stringInBytes32);
-        // console.logBytes1(stringInBytes32[0]);
-        // console.log(bytes(relayer_s).length);
-
-        // bytes32 msgHash = sam.getMessageHash(address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, 0, DEFAULT_DEADLINE);
-        // console.logBytes32(msgHash);
-        // // bytes32 msgHash = 0xc05dac643c7899c2ba02c2574c9311812a1cb02a76d9659f670c71c111e3829d;
-        // string memory msgHash64 = Base64.encode(bytes.concat(msgHash));
-        // console.log(msgHash64);
     }
 
     // Same with the test above, but with another function.
@@ -77,47 +64,25 @@ contract SAMExecuteTxTest is Test, Setup {
         );
     }
 
-    // // Same proof can not be used for twice in different tx.
-    // function test_sameProofCantBeUsedTwiceInDifferentTx() external enableModuleForSafe(safe, sam) {
-    //     ISAMM.Proof memory proof = defaultCorrectProof();
+    // This test must not be removed.
+    // Same proof can not be used in the same transaction.
+    function test_sameProofCantBeUsedTwiceInSameTx() external enableModuleForSafe(safe, sam) {
+        ISAMM.Proof memory proof = defaultCorrectProof();
 
-    //     (bool result, bytes memory returnData) = sam.executeTransactionReturnData(
-    //         address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof)
-    //     );
-
-    //     assertTrue(result);
-    //     assertEq(abi.decode(returnData, (uint256)), DEFAULT_THRESHOLD);
-
-    //     // First execution is ok, but second must revert
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(
-    //             ISAMMErrors.SAMM__commitAlreadyUsed.selector, 0
-    //         )
-    //     );
-    //     sam.executeTransactionReturnData(
-    //         address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof)
-    //     );
-    // }
-
-    // TODO
-    // // This test must not be removed.
-    // // Same proof can not be used in the same transaction.
-    // function test_sameProofCantBeUsedTwiceInSameTx() external enableModuleForSafe(safe, sam) {
-    //     ISAMM.Proof memory proof = defaultCorrectProof();
-
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(
-    //             ISAMMErrors.SAMM__commitAlreadyUsed.selector, 1
-    //         )
-    //     );
-    //     sam.executeTransactionReturnData(
-    //         address(sam),
-    //         0,
-    //         DEFAULT_CALLDATA,
-    //         IMinimalSafeModuleManager.Operation.Call,
-    //         ArrHelper._proofArr(proof, proof)
-    //     );
-    // }
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISAMMErrors.SAMM__commitAlreadyUsed.selector, 1
+            )
+        );
+        sam.executeTransactionReturnData(
+            address(sam),
+            0,
+            DEFAULT_CALLDATA,
+            IMinimalSafeModuleManager.Operation.Call,
+            ArrHelper._proofArr(proof, proof),
+            DEFAULT_DEADLINE
+        );
+    }
 
     // If executor provides amount of proofs less than threshold tx must be reverted.
     function test_notEnoughProofsWillRevert() external enableModuleForSafe(safe, sam) {
