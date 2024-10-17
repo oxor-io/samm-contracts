@@ -20,6 +20,8 @@
 pragma solidity 0.8.23;
 
 import {ISafe} from "../Safe/interfaces/ISafe.sol";
+import 'base64/base64.sol';
+
 
 library PubSignalsConstructor {
     // Chosen specifically because it is the most convenient representation of numbers at the moment.
@@ -29,13 +31,13 @@ library PubSignalsConstructor {
     uint256 private constant ROOT_INDEX_IN_PUB_SIGNALS = 1;
     uint256 private constant MASK = (1 << CHUNK_SIZE) - 1;
 
-    function getMsgHash(address to, uint256 value, bytes memory data, ISafe.Operation operation, uint256 nonce)
+    function getMsgHash(address to, uint256 value, bytes memory data, ISafe.Operation operation, uint256 nonce, uint256 deadline)
         internal
         view
         returns (bytes32 msgHash)
     {
         bytes32 calldataHash = keccak256(data);
-        msgHash = keccak256(abi.encode(to, value, calldataHash, operation, nonce, address(this), block.chainid));
+        msgHash = keccak256(abi.encode(to, value, calldataHash, operation, nonce, deadline, address(this), block.chainid));
     }
 
     function getPubSignals(
@@ -45,7 +47,8 @@ library PubSignalsConstructor {
         uint256 value,
         bytes memory data,
         ISafe.Operation operation,
-        uint256 nonce
+        uint256 nonce,
+        uint256 deadline
     ) internal view returns (bytes32[] memory pubSignals) {
         // public signals order: root, relayer, relayer_len, msg_hash, pubkey_mod, redc_params
         pubSignals = new bytes32[](113);
@@ -61,10 +64,10 @@ library PubSignalsConstructor {
         pubSignals[32] = bytes32(uint256(bytes(relayer).length));
 
         // msgHash
-        // bytes32 msgHash = getMsgHash(to, value, data, operation, nonce);
-        uint8[44] memory msgHash = [119, 70, 50, 115, 90, 68, 120, 52, 109, 99, 75, 54, 65, 115, 74, 88, 84, 74, 77, 82, 103, 83, 111, 99, 115, 67, 112, 50, 50, 87, 87, 102, 90, 119, 120, 120, 119, 82, 72, 106, 103, 112, 48, 61];
+        bytes32 msgHash = getMsgHash(to, value, data, operation, nonce, deadline);
+        bytes memory msgHash64 = bytes(Base64.encode(bytes.concat(msgHash)));
         for (uint256 i = 0; i < 44; i++) {
-            pubSignals[33+i] = bytes32(uint256(msgHash[i]));
+            pubSignals[33+i] = bytes32(uint256(uint8(msgHash64[i])));
         }
 
         // pubkey - TODO
@@ -115,11 +118,4 @@ library PubSignalsConstructor {
             pubSignals[95+i] = redc_params_limbs[i];
         }
     }
-
-    // function splitValueByChunks(uint256 value) private pure returns (uint256[CHUNK_AMOUNT] memory chunks) {
-    //     for (uint256 i; i < CHUNK_AMOUNT; i++) {
-    //         chunks[i] = value & MASK;
-    //         value >>= CHUNK_SIZE;
-    //     }
-    // }
 }

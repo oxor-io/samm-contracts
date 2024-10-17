@@ -13,7 +13,7 @@ import {SimpleContractDelegateCall} from "../helpers/SimpleContractDelegateCall.
 
 import {console} from "forge-std/console.sol";
 
-import 'base64-sol/base64.sol';
+import 'base64/base64.sol';
 
 contract SAMExecuteTxTest is Test, Setup {
     // Correct proof must be verified and tx getThreshold executed.
@@ -22,7 +22,7 @@ contract SAMExecuteTxTest is Test, Setup {
         ISAMM.Proof memory proof = defaultCorrectProof();
 
         (bool result, bytes memory returnData) = sam.executeTransactionReturnData(
-            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof)
+            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof), DEFAULT_DEADLINE
         );
 
         assertTrue(result);
@@ -34,9 +34,11 @@ contract SAMExecuteTxTest is Test, Setup {
         // console.logBytes1(stringInBytes32[0]);
         // console.log(bytes(relayer_s).length);
 
-        bytes32 msgHash = 0xc05dac643c7899c2ba02c2574c9311812a1cb02a76d9659f670c71c111e3829d;
-        string msgHash64 = base64.encode(msgHash);
-        console.log(msgHash64);
+        // bytes32 msgHash = sam.getMessageHash(address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, 0, DEFAULT_DEADLINE);
+        // console.logBytes32(msgHash);
+        // // bytes32 msgHash = 0xc05dac643c7899c2ba02c2574c9311812a1cb02a76d9659f670c71c111e3829d;
+        // string memory msgHash64 = Base64.encode(bytes.concat(msgHash));
+        // console.log(msgHash64);
     }
 
     // Same with the test above, but with another function.
@@ -45,7 +47,7 @@ contract SAMExecuteTxTest is Test, Setup {
         ISAMM.Proof memory proof = defaultCorrectProof();
 
         (bool result) = sam.executeTransaction(
-            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof)
+            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof), DEFAULT_DEADLINE
         );
 
         assertTrue(result);
@@ -58,7 +60,7 @@ contract SAMExecuteTxTest is Test, Setup {
 
         vm.expectRevert(SumcheckFailed.selector);
         sam.executeTransactionReturnData(
-            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof)
+            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof), DEFAULT_DEADLINE
         );
     }
 
@@ -71,7 +73,7 @@ contract SAMExecuteTxTest is Test, Setup {
 
         vm.expectRevert(ISAMMErrors.SAMM__rootIsZero.selector);
         newSAM.executeTransactionReturnData(
-            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof)
+            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof), DEFAULT_DEADLINE
         );
     }
 
@@ -125,7 +127,7 @@ contract SAMExecuteTxTest is Test, Setup {
             )
         );
         sam.executeTransactionReturnData(
-            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr()
+            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(), DEFAULT_DEADLINE
         );
     }
 

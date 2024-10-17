@@ -41,7 +41,8 @@ interface ISAMM is
         uint256 value,
         bytes memory data,
         ISafe.Operation operation,
-        Proof[] calldata proofs
+        Proof[] calldata proofs,
+        uint256 deadline
     ) external returns (bool success);
 
     function executeTransactionReturnData(
@@ -49,6 +50,7 @@ interface ISAMM is
         uint256 value,
         bytes memory data,
         ISafe.Operation operation,
-        Proof[] calldata proofs
+        Proof[] calldata proofs,
+        uint256 deadline
     ) external returns (bool success, bytes memory returnData);
 }

@@ -132,9 +132,10 @@ contract SAMM is Singleton, ISAMM {
         uint256 value,
         bytes memory data,
         ISafe.Operation operation,
-        Proof[] calldata proofs
+        Proof[] calldata proofs,
+        uint256 deadline
     ) external returns (bool success) {
-        (success,) = _executeTransaction(to, value, data, operation, proofs);
+        (success,) = _executeTransaction(to, value, data, operation, proofs, deadline);
     }
 
     /**
@@ -157,9 +158,10 @@ contract SAMM is Singleton, ISAMM {
         uint256 value,
         bytes memory data,
         ISafe.Operation operation,
-        Proof[] calldata proofs
+        Proof[] calldata proofs,
+        uint256 deadline
     ) external returns (bool success, bytes memory returnData) {
-        (success, returnData) = _executeTransaction(to, value, data, operation, proofs);
+        (success, returnData) = _executeTransaction(to, value, data, operation, proofs, deadline);
     }
 
     // TODO add setters
@@ -207,12 +209,12 @@ contract SAMM is Singleton, ISAMM {
      * @param nonce The nonce to be used for the transaction.
      * @return msgHash The resulting message hash.
      */
-    function getMessageHash(address to, uint256 value, bytes memory data, ISafe.Operation operation, uint256 nonce)
+    function getMessageHash(address to, uint256 value, bytes memory data, ISafe.Operation operation, uint256 nonce, uint256 deadline)
         external
         view
         returns (bytes32 msgHash)
     {
-        return PubSignalsConstructor.getMsgHash(to, value, data, operation, nonce);
+        return PubSignalsConstructor.getMsgHash(to, value, data, operation, nonce, deadline);
     }
 
     //////////////////////////////
@@ -223,7 +225,8 @@ contract SAMM is Singleton, ISAMM {
         uint256 value,
         bytes memory data,
         ISafe.Operation operation,
-        Proof[] calldata proofs
+        Proof[] calldata proofs,
+        uint256 deadline
     ) private returns (bool success, bytes memory returnData) {
         uint256 root = s_participantsRoot;
 
@@ -234,7 +237,7 @@ contract SAMM is Singleton, ISAMM {
 
         // pubSignals = [commit, root, msg hash by chunks]
         bytes32[] memory pubSignals = PubSignalsConstructor.getPubSignals(
-            root, s_relayer, to, value, data, operation, s_nonce++);
+            root, s_relayer, to, value, data, operation, s_nonce++, deadline);
 
         if (s_threshold > proofs.length) {
             revert SAMM__notEnoughProofs(proofs.length, s_threshold);
