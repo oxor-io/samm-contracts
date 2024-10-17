@@ -16,7 +16,6 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 pragma solidity 0.8.23;
 
 // Contracts
@@ -82,8 +81,9 @@ contract SAMM is Singleton, ISAMM {
      * @param membersRoot The Merkle root of participant addresses.
      * @param threshold The minimum number of proofs required to execute a transaction.
      */
-    function setup(address safe, uint256 membersRoot, uint64 threshold, 
-        string calldata relayer, address dkimRegistry) external {
+    function setup(address safe, uint256 membersRoot, uint64 threshold, string calldata relayer, address dkimRegistry)
+        external
+    {
         if (s_threshold != 0) {
             revert SAMM__alreadyInitialized();
         }
@@ -280,11 +280,14 @@ contract SAMM is Singleton, ISAMM {
      * @param nonce The nonce to be used for the transaction.
      * @return msgHash The resulting message hash.
      */
-    function getMessageHash(address to, uint256 value, bytes memory data, ISafe.Operation operation, uint256 nonce, uint256 deadline)
-        external
-        view
-        returns (bytes32 msgHash)
-    {
+    function getMessageHash(
+        address to,
+        uint256 value,
+        bytes memory data,
+        ISafe.Operation operation,
+        uint256 nonce,
+        uint256 deadline
+    ) external view returns (bytes32 msgHash) {
         return PubSignalsConstructor.getMsgHash(to, value, data, operation, nonce, deadline);
     }
 
@@ -312,8 +315,8 @@ contract SAMM is Singleton, ISAMM {
         }
 
         // pubSignals = [root, relayer, relayer_len, msg_hash, pubkey_mod, redc_params]
-        bytes32[] memory pubSignals = PubSignalsConstructor.getPubSignals(
-            root, s_relayer, to, value, data, operation, s_nonce++, deadline);
+        bytes32[] memory pubSignals =
+            PubSignalsConstructor.getPubSignals(root, s_relayer, to, value, data, operation, s_nonce++, deadline);
 
         if (s_threshold > proofs.length) {
             revert SAMM__notEnoughProofs(proofs.length, s_threshold);
@@ -331,8 +334,7 @@ contract SAMM is Singleton, ISAMM {
             Proof memory currentProof = proofs[i];
 
             // check DKIM public key
-            bool isValid = s_dkimRegistry.isDKIMPublicKeyHashValid(
-                currentProof.domain, currentProof.pubkeyHash);
+            bool isValid = s_dkimRegistry.isDKIMPublicKeyHashValid(currentProof.domain, currentProof.pubkeyHash);
             if (!isValid) {
                 revert SAMM__DKIMPublicKeyVerificationFailed(i);
             }
@@ -348,15 +350,9 @@ contract SAMM is Singleton, ISAMM {
             pubSignals[78] = currentProof.pubkeyHash;
             bool result;
             if (currentProof.is2048sig) {
-                result = VERIFIER2048.verify({
-                    proof: currentProof.proof,
-                    publicInputs: pubSignals
-                });
+                result = VERIFIER2048.verify({proof: currentProof.proof, publicInputs: pubSignals});
             } else {
-                result = VERIFIER1024.verify({
-                    proof: currentProof.proof,
-                    publicInputs: pubSignals
-                });
+                result = VERIFIER1024.verify({proof: currentProof.proof, publicInputs: pubSignals});
             }
 
             if (!result) {

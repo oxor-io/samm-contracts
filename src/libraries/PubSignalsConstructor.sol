@@ -16,21 +16,23 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 pragma solidity 0.8.23;
 
 import {ISafe} from "../Safe/interfaces/ISafe.sol";
-import 'base64/base64.sol';
-
+import "base64/base64.sol";
 
 library PubSignalsConstructor {
-    function getMsgHash(address to, uint256 value, bytes memory data, ISafe.Operation operation, uint256 nonce, uint256 deadline)
-        internal
-        view
-        returns (bytes32 msgHash)
-    {
+    function getMsgHash(
+        address to,
+        uint256 value,
+        bytes memory data,
+        ISafe.Operation operation,
+        uint256 nonce,
+        uint256 deadline
+    ) internal view returns (bytes32 msgHash) {
         bytes32 calldataHash = keccak256(data);
-        msgHash = keccak256(abi.encode(to, value, calldataHash, operation, nonce, deadline, address(this), block.chainid));
+        msgHash =
+            keccak256(abi.encode(to, value, calldataHash, operation, nonce, deadline, address(this), block.chainid));
     }
 
     function getPubSignals(
@@ -52,7 +54,7 @@ library PubSignalsConstructor {
         // relayer
         bytes32 relayerBytes32 = bytes32(bytes(relayer));
         for (uint256 i = 0; i < 31; i++) {
-            pubSignals[1+i] = bytes32(uint256(uint8(relayerBytes32[i])));
+            pubSignals[1 + i] = bytes32(uint256(uint8(relayerBytes32[i])));
         }
         pubSignals[32] = bytes32(uint256(bytes(relayer).length));
 
@@ -60,7 +62,7 @@ library PubSignalsConstructor {
         bytes32 msgHash = getMsgHash(to, value, data, operation, nonce, deadline);
         bytes memory msgHash64 = bytes(Base64.encode(bytes.concat(msgHash)));
         for (uint256 i = 0; i < 44; i++) {
-            pubSignals[33+i] = bytes32(uint256(uint8(msgHash64[i])));
+            pubSignals[33 + i] = bytes32(uint256(uint8(msgHash64[i])));
         }
     }
 }

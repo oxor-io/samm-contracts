@@ -2,9 +2,7 @@
 pragma solidity 0.8.23;
 
 import {Setup, Test, IMinimalSafeModuleManager, SAMM, ISafe, ArrHelper} from "./Setup.sol";
-import {
-    ISAMMErrors, ISAMM
-} from "../../src/interfaces/ISAMM.sol";
+import {ISAMMErrors, ISAMM} from "../../src/interfaces/ISAMM.sol";
 
 import {SumcheckFailed} from "../../src/utils/Verifier2048.sol";
 
@@ -13,7 +11,6 @@ import {SimpleContractDelegateCall} from "../helpers/SimpleContractDelegateCall.
 
 import {console} from "forge-std/console.sol";
 
-
 contract SAMExecuteTxTest is Test, Setup {
     // Correct proof must be verified and tx getThreshold executed.
     // Call must be successful and returned data correct
@@ -21,7 +18,12 @@ contract SAMExecuteTxTest is Test, Setup {
         ISAMM.Proof memory proof = defaultCorrectProof();
 
         (bool result, bytes memory returnData) = sam.executeTransactionReturnData(
-            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof), DEFAULT_DEADLINE
+            address(sam),
+            0,
+            DEFAULT_CALLDATA,
+            IMinimalSafeModuleManager.Operation.Call,
+            ArrHelper._proofArr(proof),
+            DEFAULT_DEADLINE
         );
 
         assertTrue(result);
@@ -34,7 +36,12 @@ contract SAMExecuteTxTest is Test, Setup {
         ISAMM.Proof memory proof = defaultCorrectProof();
 
         (bool result) = sam.executeTransaction(
-            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof), DEFAULT_DEADLINE
+            address(sam),
+            0,
+            DEFAULT_CALLDATA,
+            IMinimalSafeModuleManager.Operation.Call,
+            ArrHelper._proofArr(proof),
+            DEFAULT_DEADLINE
         );
 
         assertTrue(result);
@@ -47,7 +54,12 @@ contract SAMExecuteTxTest is Test, Setup {
 
         vm.expectRevert(SumcheckFailed.selector);
         sam.executeTransactionReturnData(
-            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof), DEFAULT_DEADLINE
+            address(sam),
+            0,
+            DEFAULT_CALLDATA,
+            IMinimalSafeModuleManager.Operation.Call,
+            ArrHelper._proofArr(proof),
+            DEFAULT_DEADLINE
         );
     }
 
@@ -60,7 +72,12 @@ contract SAMExecuteTxTest is Test, Setup {
 
         vm.expectRevert(ISAMMErrors.SAMM__rootIsZero.selector);
         newSAM.executeTransactionReturnData(
-            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(proof), DEFAULT_DEADLINE
+            address(sam),
+            0,
+            DEFAULT_CALLDATA,
+            IMinimalSafeModuleManager.Operation.Call,
+            ArrHelper._proofArr(proof),
+            DEFAULT_DEADLINE
         );
     }
 
@@ -69,11 +86,7 @@ contract SAMExecuteTxTest is Test, Setup {
     function test_sameProofCantBeUsedTwiceInSameTx() external enableModuleForSafe(safe, sam) {
         ISAMM.Proof memory proof = defaultCorrectProof();
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISAMMErrors.SAMM__commitAlreadyUsed.selector, 1
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(ISAMMErrors.SAMM__commitAlreadyUsed.selector, 1));
         sam.executeTransactionReturnData(
             address(sam),
             0,
@@ -86,13 +99,14 @@ contract SAMExecuteTxTest is Test, Setup {
 
     // If executor provides amount of proofs less than threshold tx must be reverted.
     function test_notEnoughProofsWillRevert() external enableModuleForSafe(safe, sam) {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISAMMErrors.SAMM__notEnoughProofs.selector, 0, 1
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(ISAMMErrors.SAMM__notEnoughProofs.selector, 0, 1));
         sam.executeTransactionReturnData(
-            address(sam), 0, DEFAULT_CALLDATA, IMinimalSafeModuleManager.Operation.Call, ArrHelper._proofArr(), DEFAULT_DEADLINE
+            address(sam),
+            0,
+            DEFAULT_CALLDATA,
+            IMinimalSafeModuleManager.Operation.Call,
+            ArrHelper._proofArr(),
+            DEFAULT_DEADLINE
         );
     }
 
@@ -107,7 +121,6 @@ contract SAMExecuteTxTest is Test, Setup {
         vm.expectRevert(ISAMMErrors.SAMM__notSafe.selector);
         sam.setMembersRoot(1);
     }
-
 
     // Safe Wallet can directly set parameters in SAM.
     function test_walletCanSetParamsDirectly() external enableModuleForSafe(safe, sam) {

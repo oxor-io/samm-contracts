@@ -2,9 +2,7 @@
 pragma solidity 0.8.23;
 
 import {Setup, Test, SAMM} from "./Setup.sol";
-import {
-    ISAMMErrors, ISAMM
-} from "../../src/interfaces/ISAMM.sol";
+import {ISAMMErrors, ISAMM} from "../../src/interfaces/ISAMM.sol";
 
 contract SAMExecuteTxTest is Test, Setup {
     function test_singletonSetupWillRevert() external {
@@ -23,20 +21,23 @@ contract SAMExecuteTxTest is Test, Setup {
     }
 
     function test_setupWithZeroThresholdWillRevert() external {
-        bytes memory initData = abi.encodeCall(SAMM.setup, (address(safe), DEFAULT_ROOT, 0, DEFAULT_RELAYER, address(dkimRegistry)));
+        bytes memory initData =
+            abi.encodeCall(SAMM.setup, (address(safe), DEFAULT_ROOT, 0, DEFAULT_RELAYER, address(dkimRegistry)));
         vm.expectRevert(); // Since factory will revert with 0 data
         createSAM(initData, 12317);
     }
 
     function test_setupWithZeroRootWillRevert() external {
-        bytes memory initData = abi.encodeCall(SAMM.setup, (address(safe), 0, DEFAULT_THRESHOLD, DEFAULT_RELAYER, address(dkimRegistry)));
+        bytes memory initData =
+            abi.encodeCall(SAMM.setup, (address(safe), 0, DEFAULT_THRESHOLD, DEFAULT_RELAYER, address(dkimRegistry)));
         vm.expectRevert(); // Since factory will revert with 0 data
         createSAM(initData, 12317);
     }
 
     function test_setupWithZeroSafeWillRevert() external {
-        bytes memory initData =
-            abi.encodeCall(SAMM.setup, (address(0), DEFAULT_ROOT, DEFAULT_THRESHOLD, DEFAULT_RELAYER, address(dkimRegistry)));
+        bytes memory initData = abi.encodeCall(
+            SAMM.setup, (address(0), DEFAULT_ROOT, DEFAULT_THRESHOLD, DEFAULT_RELAYER, address(dkimRegistry))
+        );
         vm.expectRevert(); // Since factory will revert with 0 data
         createSAM(initData, 12317);
     }
