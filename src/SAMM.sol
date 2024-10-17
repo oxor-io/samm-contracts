@@ -30,10 +30,10 @@ import {PubSignalsConstructor} from "./libraries/PubSignalsConstructor.sol";
 // Interfaces
 import {ISAMM} from "./interfaces/ISAMM.sol";
 import {ISafe} from "./Safe/interfaces/ISafe.sol";
-import {IDKIMRegistry} from "zk-email-verify/packages/contracts/interfaces/IDKIMRegistry.sol";
+import {IDKIMRegistry} from "./interfaces/IDKIMRegistry.sol";
 
 /// @title Safe Anonymization Mail Module
-/// @author Vladimir Kumalagov (@KumaCrypto)
+/// @author Vladimir Kumalagov (@KumaCrypto, @dry914)
 /// @notice This contract is a module for Safe Wallet (Gnosis Safe), aiming to provide anonymity for users.
 /// It allows users to execute transactions for a specified Safe without revealing the addresses of the participants who voted to execute the transaction.
 /// @dev This contract should be used as a singleton. And proxy contracts must use delegatecall to use the contract logic.
@@ -267,9 +267,8 @@ contract SAMM is Singleton, ISAMM {
             Proof memory currentProof = proofs[i];
 
             // check DKIM public key
-            bytes32 publicKeyHash = 0x09b086d54be973c0cae8f289b9a308969c3a0d336ba3000651cffcde84ce5fb3; // TODO
             bool isValid = s_dkimRegistry.isDKIMPublicKeyHashValid(
-                currentProof.domain, publicKeyHash);
+                currentProof.domain, currentProof.pubkeyHash);
             if (!isValid) {
                 revert SAMM__DKIMPublicKeyVerificationFailed(i);
             }
@@ -281,7 +280,8 @@ contract SAMM is Singleton, ISAMM {
                 }
             }
 
-            pubSignals[113] = bytes32(currentProof.commit);
+            pubSignals[77] = bytes32(currentProof.commit);
+            pubSignals[78] = currentProof.pubkeyHash;
             bool result = VERIFIER2048.verify({
                 proof: currentProof.proof,
                 publicInputs: pubSignals

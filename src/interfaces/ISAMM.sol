@@ -33,9 +33,10 @@ interface ISAMM is
         bytes proof;
         uint256 commit;
         string domain;
+        bytes32 pubkeyHash;
     }
 
-    function setup(address safe, uint256 participantsRoot, uint64 threshold, string calldata relayer) external;
+    function setup(address safe, uint256 participantsRoot, uint64 threshold, string calldata relayer, address dkimRegistry) external;
 
     function executeTransaction(
         address to,
