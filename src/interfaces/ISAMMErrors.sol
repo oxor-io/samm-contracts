@@ -34,4 +34,5 @@ interface ISAMMErrors {
     error SAMM__thresholdIsTooBig();
     error SAMM__hashApproveToInvalidNonce();
     error SAMM__proofsLengthIsZero();
+    error SAMM__deadlineIsPast();
 }

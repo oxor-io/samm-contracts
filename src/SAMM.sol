@@ -235,7 +235,12 @@ contract SAMM is Singleton, ISAMM {
             revert SAMM__rootIsZero();
         }
 
-        // pubSignals = [commit, root, msg hash by chunks]
+        // Check execution deadline.
+        if (block.timestamp > deadline) {
+            revert SAMM__deadlineIsPast();
+        }
+
+        // pubSignals = [root, relayer, relayer_len, msg_hash, pubkey_mod, redc_params]
         bytes32[] memory pubSignals = PubSignalsConstructor.getPubSignals(
             root, s_relayer, to, value, data, operation, s_nonce++, deadline);
 
