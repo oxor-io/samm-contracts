@@ -8,32 +8,12 @@ import {IModuleGuard} from "./interfaces/IModuleGuard.sol";
 import {ISafe} from "./Safe/interfaces/ISafe.sol";
 import {Singleton} from "./Safe/common/Singleton.sol";
 
-abstract contract BaseModuleGuard is IModuleGuard {
-    function supportsInterface(bytes4 interfaceId) external view virtual override returns (bool) {
-        return
-            interfaceId == type(IModuleGuard).interfaceId || // 0x58401ed8
-            interfaceId == type(IERC165).interfaceId; // 0x01ffc9a7
-    }
-}
-
-contract ModuleGuard is Singleton, BaseModuleGuard {
+contract ModuleGuard is Singleton, IModuleGuard {
     // solhint-disable-next-line payable-fallback
     fallback() external {
         // We don't revert on fallback to avoid issues in case of a Safe upgrade
         // E.g. The expected check method might change and then the Safe would be locked.
     }
-
-    event Setup(address indexed initiator, address indexed safe);
-    event AllowanceChanged(address indexed to, uint256 amount);
-    event TxAllowanceChanged(address indexed to, bytes4 indexed selector, bool isAllowed);
-
-    error ModuleGuard__alreadyInitialized();
-    error ModuleGuard__txIsNotAllowed();
-    error ModuleGuard__allowanceIsNotEnough();
-    error ModuleGuard__safeIsZero();
-    error ModuleGuard__notSafe();
-    error ModuleGuard__toIsWrong();
-    error ModuleGuard__noChanges();
 
     //////////////////////
     // State Variables  //
@@ -43,11 +23,11 @@ contract ModuleGuard is Singleton, BaseModuleGuard {
 
     // A whitelist of contract addresses and function signatures
     // with which the SAMM module can interact on behalf of the Safe multisig
-    mapping(address to => mapping(bytes4 selector => bool)) public isTxAllowed;
+    mapping(address module => mapping(address to => mapping(bytes4 selector => bool))) public isTxAllowed;
 
     // A limit on the amount of ETH that can be transferred
     // to a single address in the whitelist.
-    mapping(address to => uint256) public allowance;
+    mapping(address module => mapping(address to => uint256)) public allowance;
 
     //////////////////////////////
     // Functions - Constructor  //
@@ -83,32 +63,40 @@ contract ModuleGuard is Singleton, BaseModuleGuard {
         emit Setup(msg.sender, _safe);
     }
 
-    function setTxAllowed(address to, bytes4 selector, bool isAllowed) external {
-        if (msg.sender != address(safe)) {
+    function setTxAllowed(address module, address to, bytes4 selector, bool isAllowed) external {
+        address _safe = address(safe);
+        if (msg.sender != _safe) {
             revert ModuleGuard__notSafe();
         }
-        if (to == address(safe) || to == address(0)) {
+        if (module == _safe || module == address(0)) {
+            revert ModuleGuard__moduleIsWrong();
+        }
+        if (to == _safe || to == address(0)) {
             revert ModuleGuard__toIsWrong();
         }
-        if (isAllowed == isTxAllowed[to][selector]) {
+        if (isAllowed == isTxAllowed[module][to][selector]) {
             revert ModuleGuard__noChanges();
         }
-        isTxAllowed[to][selector] = isAllowed;
-        emit TxAllowanceChanged(to, selector, isAllowed);
+        isTxAllowed[module][to][selector] = isAllowed;
+        emit TxAllowanceChanged(module, to, selector, isAllowed);
     }
 
-    function setAllowance(address to, uint256 amount) external {
-        if (msg.sender != address(safe)) {
+    function setAllowance(address module, address to, uint256 amount) external {
+        address _safe = address(safe);
+        if (msg.sender != _safe) {
             revert ModuleGuard__notSafe();
         }
-        if (to == address(safe) || to == address(0)) {
+        if (module == _safe || module == address(0)) {
+            revert ModuleGuard__moduleIsWrong();
+        }
+        if (to == _safe || to == address(0)) {
             revert ModuleGuard__toIsWrong();
         }
-        if (amount == allowance[to]) {
+        if (amount == allowance[module][to]) {
             revert ModuleGuard__noChanges();
         }
-        allowance[to] = amount;
-        emit AllowanceChanged(to, amount);
+        allowance[module][to] = amount;
+        emit AllowanceChanged(module, to, amount);
     }
 
     /**
@@ -128,10 +116,10 @@ contract ModuleGuard is Singleton, BaseModuleGuard {
         address module
     ) external view override returns (bytes32 moduleTxHash) {
         bytes4 selector = _getABISig(data);
-        if (isTxAllowed[to][selector]) {
+        if (!isTxAllowed[module][to][selector]) {
             revert ModuleGuard__txIsNotAllowed();
         }
-        if (allowance[to] >= value) {
+        if (allowance[module][to] < value) {
             revert ModuleGuard__allowanceIsNotEnough();
         }
 
@@ -152,6 +140,12 @@ contract ModuleGuard is Singleton, BaseModuleGuard {
     /// @return _safe The address of the associated Safe.
     function getSafe() external view returns (address _safe) {
         return address(safe);
+    }
+
+    function supportsInterface(bytes4 interfaceId) external view virtual override returns (bool) {
+        return
+            interfaceId == type(IModuleGuard).interfaceId || // 0x58401ed8
+            interfaceId == type(IERC165).interfaceId; // 0x01ffc9a7
     }
 
     //////////////////////////////
