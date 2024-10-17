@@ -21,8 +21,8 @@ pragma solidity 0.8.23;
 
 // Contracts
 import {Singleton} from "./Safe/common/Singleton.sol";
-// TODO import {HonkVerifier} from "./utils/Verifier1024.sol";
-import {HonkVerifier} from "./utils/Verifier2048.sol";
+import {HonkVerifier as Verifier1024} from "./utils/Verifier1024.sol";
+import {HonkVerifier as Verifier2048} from "./utils/Verifier2048.sol";
 
 // Libs
 import {PubSignalsConstructor} from "./libraries/PubSignalsConstructor.sol";
@@ -42,9 +42,9 @@ contract SAMM is Singleton, ISAMM {
     //Immutable Variables//
     ///////////////////////
 
-    // TODO use shared verifiers?
     // Verifier from repository: https://github.com/oxor-io/samm-circuits
-    HonkVerifier private immutable VERIFIER2048 = new HonkVerifier();
+    Verifier1024 private immutable VERIFIER1024 = new Verifier1024();
+    Verifier2048 private immutable VERIFIER2048 = new Verifier2048();
 
     //////////////////////
     // State Variables  //
@@ -282,10 +282,18 @@ contract SAMM is Singleton, ISAMM {
 
             pubSignals[77] = bytes32(currentProof.commit);
             pubSignals[78] = currentProof.pubkeyHash;
-            bool result = VERIFIER2048.verify({
-                proof: currentProof.proof,
-                publicInputs: pubSignals
-            });
+            bool result;
+            if (currentProof.is2048sig) {
+                result = VERIFIER2048.verify({
+                    proof: currentProof.proof,
+                    publicInputs: pubSignals
+                });
+            } else {
+                result = VERIFIER1024.verify({
+                    proof: currentProof.proof,
+                    publicInputs: pubSignals
+                });
+            }
 
             if (!result) {
                 revert SAMM__proofVerificationFailed(i);
