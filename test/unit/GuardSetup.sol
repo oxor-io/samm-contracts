@@ -2,11 +2,11 @@
 pragma solidity 0.8.23;
 
 import {Test} from "forge-std/Test.sol";
-import {ModuleGuard} from "../../src/guard/ModuleGuard.sol";
-import {SafeProxyFactory} from "../../src/safe/proxy/SafeProxyFactory.sol";
+import {ModuleGuard} from "../../src/ModuleGuard.sol";
+import {SafeProxyFactory} from "../../src/Safe/proxy/SafeProxyFactory.sol";
 import {ISafe} from "../../src/Safe/interfaces/ISafe.sol";
 
-contract Setup is Test {
+contract GuardSetup is Test {
     //////////////////////
     //    Constants     //
     //////////////////////

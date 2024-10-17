@@ -5,8 +5,8 @@ import {IERC165} from "./interfaces/IERC165.sol";
 import {Enum} from "./libraries/Enum.sol";
 import {IModuleGuard} from "./interfaces/IModuleGuard.sol";
 
-import {ISafe} from "./../safe/interfaces/ISafe.sol";
-import {Singleton} from "./../safe/common/Singleton.sol";
+import {ISafe} from "./Safe/interfaces/ISafe.sol";
+import {Singleton} from "./Safe/common/Singleton.sol";
 
 abstract contract BaseModuleGuard is IModuleGuard {
     function supportsInterface(bytes4 interfaceId) external view virtual override returns (bool) {
