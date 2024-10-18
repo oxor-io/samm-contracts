@@ -53,10 +53,10 @@ To compile the Foundry project, run:
 Before running tests, you will need to set up an `.env` file in the project root with an Ethereum API key. Create a `.env` file and add the following:
 
 ```
-  MAINNET_RPC={your-ethereum-api-key}
+  MAINNET_RPC={your-ethereum-rpc-url}
 ```
 
-Replace `your-ethereum-api-key` with your actual API key. Then, you can run tests with the following command:
+Replace `your-ethereum-rpc-url` with your actual RPC url. Then, you can run tests with the following command:
 
 ```
   forge test
