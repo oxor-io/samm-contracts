@@ -58,6 +58,14 @@ contract SAMM is Singleton, ISAMM {
     uint256 private s_nonce;
     IDKIMRegistry private s_dkimRegistry;
 
+    // A whitelist of contract addresses and function signatures
+    // with which the SAMM module can interact on behalf of the Safe multisig
+    mapping(address to => mapping(bytes4 selector => bool)) public isTxAllowed;
+
+    // A limit on the amount of ETH that can be transferred
+    // to a single address in the whitelist.
+    mapping(address to => uint256) public allowance;
+
     //////////////////////////////
     // Functions - Constructor  //
     //////////////////////////////
@@ -81,9 +89,14 @@ contract SAMM is Singleton, ISAMM {
      * @param membersRoot The Merkle root of participant addresses.
      * @param threshold The minimum number of proofs required to execute a transaction.
      */
-    function setup(address safe, uint256 membersRoot, uint64 threshold, string calldata relayer, address dkimRegistry)
-        external
-    {
+    function setup(
+        address safe,
+        uint256 membersRoot,
+        uint64 threshold,
+        string calldata relayer,
+        address dkimRegistry,
+        TxAllowance[] calldata txAllowances
+    ) external {
         if (s_threshold != 0) {
             revert SAMM__alreadyInitialized();
         }
@@ -109,6 +122,14 @@ contract SAMM is Singleton, ISAMM {
             if (dkimRegistry == address(0)) {
                 revert SAMM__dkimRegistryIsZero();
             }
+        }
+
+        for (uint256 i; i < txAllowances.length; i++) {
+            if (txAllowances[i].to == safe || txAllowances[i].to == address(0)) {
+                revert SAMM__toIsWrong();
+            }
+            isTxAllowed[txAllowances[i].to][txAllowances[i].selector] = true;
+            allowance[txAllowances[i].to] = txAllowances[i].amount;
         }
 
         s_safe = ISafe(safe);
@@ -231,6 +252,36 @@ contract SAMM is Singleton, ISAMM {
         emit RelayerIsChanged(relayer);
     }
 
+    function setTxAllowed(address to, bytes4 selector, bool isAllowed) external {
+        address _safe = address(s_safe);
+        if (msg.sender != _safe) {
+            revert SAMM__notSafe();
+        }
+        if (to == _safe || to == address(0)) {
+            revert SAMM__toIsWrong();
+        }
+        if (isAllowed == isTxAllowed[to][selector]) {
+            revert SAMM__noChanges();
+        }
+        isTxAllowed[to][selector] = isAllowed;
+        emit TxAllowanceChanged(to, selector, isAllowed);
+    }
+
+    function setAllowance(address to, uint256 amount) external {
+        address _safe = address(s_safe);
+        if (msg.sender != _safe) {
+            revert SAMM__notSafe();
+        }
+        if (to == _safe || to == address(0)) {
+            revert SAMM__toIsWrong();
+        }
+        if (amount == allowance[to]) {
+            revert SAMM__noChanges();
+        }
+        allowance[to] = amount;
+        emit AllowanceChanged(to, amount);
+    }
+
     //////////////////////////////
     // Functions  -   View      //
     //////////////////////////////
@@ -314,6 +365,9 @@ contract SAMM is Singleton, ISAMM {
             revert SAMM__deadlineIsPast();
         }
 
+        // Check tx allowance
+        _checkTxAllowance(to, value, data);
+
         // pubSignals = [root, relayer, relayer_len, msg_hash, pubkey_mod, redc_params]
         bytes32[] memory pubSignals =
             PubSignalsConstructor.getPubSignals(root, s_relayer, to, value, data, operation, s_nonce++, deadline);
@@ -325,6 +379,19 @@ contract SAMM is Singleton, ISAMM {
         _checkNProofs(proofs, pubSignals);
 
         return s_safe.execTransactionFromModuleReturnData(to, value, data, operation);
+    }
+
+    function _checkTxAllowance(address to, uint256 value, bytes memory data) private view {
+        bytes4 selector;
+        assembly {
+            selector := mload(add(data, 0x20))
+        }
+        if (!isTxAllowed[to][selector]) {
+            revert SAMM__txIsNotAllowed();
+        }
+        if (allowance[to] < value) {
+            revert SAMM__allowanceIsNotEnough();
+        }
     }
 
     function _checkNProofs(Proof[] calldata proofs, bytes32[] memory pubSignals) private {

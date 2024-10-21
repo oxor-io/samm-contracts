@@ -16,7 +16,6 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 pragma solidity 0.8.23;
 
 import {ISafe} from "../Safe/interfaces/ISafe.sol";
@@ -24,11 +23,7 @@ import {ISAMMEvents} from "./ISAMMEvents.sol";
 import {ISAMMErrors} from "./ISAMMErrors.sol";
 import {ISAMMGetters} from "./ISAMMGetters.sol";
 
-interface ISAMM is
-    ISAMMEvents,
-    ISAMMErrors,
-    ISAMMGetters
-{
+interface ISAMM is ISAMMEvents, ISAMMErrors, ISAMMGetters {
     struct Proof {
         bytes proof;
         uint256 commit;
@@ -37,7 +32,20 @@ interface ISAMM is
         bool is2048sig;
     }
 
-    function setup(address safe, uint256 participantsRoot, uint64 threshold, string calldata relayer, address dkimRegistry) external;
+    struct TxAllowance {
+        address to;
+        bytes4 selector;
+        uint256 amount;
+    }
+
+    function setup(
+        address safe,
+        uint256 participantsRoot,
+        uint64 threshold,
+        string calldata relayer,
+        address dkimRegistry,
+        TxAllowance[] calldata txAllowances
+    ) external;
 
     function executeTransaction(
         address to,

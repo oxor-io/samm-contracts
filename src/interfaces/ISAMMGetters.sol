@@ -16,7 +16,6 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 pragma solidity 0.8.23;
 
 import {ISafe} from "../Safe/interfaces/ISafe.sol";
@@ -30,8 +29,12 @@ interface ISAMMGetters {
 
     function getNonce() external view returns (uint256 nonce);
 
-    function getMessageHash(address to, uint256 value, bytes memory data, ISafe.Operation operation, uint256 nonce, uint256 deadline)
-        external
-        view
-        returns (bytes32 msgHash);
+    function getMessageHash(
+        address to,
+        uint256 value,
+        bytes memory data,
+        ISafe.Operation operation,
+        uint256 nonce,
+        uint256 deadline
+    ) external view returns (bytes32 msgHash);
 }

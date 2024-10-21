@@ -31,4 +31,8 @@ interface ISAMMErrors {
     error SAMM__deadlineIsPast();
     error SAMM__dkimRegistryIsZero();
     error SAMM__DKIMPublicKeyVerificationFailed(uint256 commitIndex);
+    error SAMM__toIsWrong();
+    error SAMM__noChanges();
+    error SAMM__txIsNotAllowed();
+    error SAMM__allowanceIsNotEnough();
 }

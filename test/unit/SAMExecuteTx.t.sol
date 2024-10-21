@@ -18,7 +18,7 @@ contract SAMExecuteTxTest is Test, Setup {
         ISAMM.Proof memory proof = defaultCorrectProof();
 
         (bool result, bytes memory returnData) = sam.executeTransactionReturnData(
-            address(sam),
+            DEFAULT_TO,
             0,
             DEFAULT_CALLDATA,
             IMinimalSafeModuleManager.Operation.Call,
@@ -27,7 +27,7 @@ contract SAMExecuteTxTest is Test, Setup {
         );
 
         assertTrue(result);
-        assertEq(abi.decode(returnData, (uint256)), DEFAULT_THRESHOLD);
+        assertTrue(abi.decode(returnData, (uint256)) > 100000);
     }
 
     // Same with the test above, but with another function.
@@ -36,7 +36,7 @@ contract SAMExecuteTxTest is Test, Setup {
         ISAMM.Proof memory proof = defaultCorrectProof();
 
         (bool result) = sam.executeTransaction(
-            address(sam),
+            DEFAULT_TO,
             0,
             DEFAULT_CALLDATA,
             IMinimalSafeModuleManager.Operation.Call,
@@ -54,7 +54,7 @@ contract SAMExecuteTxTest is Test, Setup {
 
         vm.expectRevert(SumcheckFailed.selector);
         sam.executeTransactionReturnData(
-            address(sam),
+            DEFAULT_TO,
             0,
             DEFAULT_CALLDATA,
             IMinimalSafeModuleManager.Operation.Call,
@@ -72,7 +72,7 @@ contract SAMExecuteTxTest is Test, Setup {
 
         vm.expectRevert(ISAMMErrors.SAMM__rootIsZero.selector);
         newSAM.executeTransactionReturnData(
-            address(sam),
+            DEFAULT_TO,
             0,
             DEFAULT_CALLDATA,
             IMinimalSafeModuleManager.Operation.Call,
@@ -88,7 +88,7 @@ contract SAMExecuteTxTest is Test, Setup {
 
         vm.expectRevert(abi.encodeWithSelector(ISAMMErrors.SAMM__commitAlreadyUsed.selector, 1));
         sam.executeTransactionReturnData(
-            address(sam),
+            DEFAULT_TO,
             0,
             DEFAULT_CALLDATA,
             IMinimalSafeModuleManager.Operation.Call,
@@ -101,7 +101,20 @@ contract SAMExecuteTxTest is Test, Setup {
     function test_notEnoughProofsWillRevert() external enableModuleForSafe(safe, sam) {
         vm.expectRevert(abi.encodeWithSelector(ISAMMErrors.SAMM__notEnoughProofs.selector, 0, 1));
         sam.executeTransactionReturnData(
-            address(sam),
+            DEFAULT_TO,
+            0,
+            DEFAULT_CALLDATA,
+            IMinimalSafeModuleManager.Operation.Call,
+            ArrHelper._proofArr(),
+            DEFAULT_DEADLINE
+        );
+    }
+
+    // If executor provides amount of proofs less than threshold tx must be reverted.
+    function test_notAllowedTxWillRevert() external enableModuleForSafe(safe, sam) {
+        vm.expectRevert(ISAMMErrors.SAMM__txIsNotAllowed.selector);
+        sam.executeTransactionReturnData(
+            address(this),
             0,
             DEFAULT_CALLDATA,
             IMinimalSafeModuleManager.Operation.Call,
