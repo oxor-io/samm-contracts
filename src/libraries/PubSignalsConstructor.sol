@@ -21,7 +21,6 @@ pragma solidity 0.8.23;
 import {ISafe} from "../Safe/interfaces/ISafe.sol";
 import "base64/base64.sol";
 
-
 library PubSignalsConstructor {
     function getMsgHash(
         address to,
