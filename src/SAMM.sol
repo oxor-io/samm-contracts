@@ -247,6 +247,10 @@ contract SAMM is Singleton, ISAMM {
             revert SAMM__emptyRelayer();
         }
 
+        if (bytes(relayer).length > 124) {
+            revert SAMM__longRelayer();
+        }
+
         s_relayer = relayer;
 
         emit RelayerIsChanged(relayer);
@@ -413,8 +417,8 @@ contract SAMM is Singleton, ISAMM {
                 }
             }
 
-            pubSignals[77] = bytes32(currentProof.commit);
-            pubSignals[78] = currentProof.pubkeyHash;
+            pubSignals[170] = bytes32(currentProof.commit);
+            pubSignals[171] = currentProof.pubkeyHash;
             bool result;
             if (currentProof.is2048sig) {
                 result = VERIFIER2048.verify({proof: currentProof.proof, publicInputs: pubSignals});
