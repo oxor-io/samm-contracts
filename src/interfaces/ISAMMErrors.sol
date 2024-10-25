@@ -35,4 +35,5 @@ interface ISAMMErrors {
     error SAMM__noChanges();
     error SAMM__txIsNotAllowed();
     error SAMM__allowanceIsNotEnough();
+    error SAMM__longRelayer();
 }

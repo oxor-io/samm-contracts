@@ -8,30 +8,22 @@ library ArrHelper {
         arr = new ISAMM.Proof[](0);
     }
 
-    function _proofArr(ISAMM.Proof memory proof)
-        internal
-        pure
-        returns (ISAMM.Proof[] memory arr)
-    {
+    function _proofArr(ISAMM.Proof memory proof) internal pure returns (ISAMM.Proof[] memory arr) {
         arr = new ISAMM.Proof[](1);
         arr[0] = proof;
     }
 
-    function _proofArr(ISAMM.Proof memory a, ISAMM.Proof memory b)
-        internal
-        pure
-        returns (ISAMM.Proof[] memory arr)
-    {
+    function _proofArr(ISAMM.Proof memory a, ISAMM.Proof memory b) internal pure returns (ISAMM.Proof[] memory arr) {
         arr = new ISAMM.Proof[](2);
         arr[0] = a;
         arr[1] = b;
     }
 
-    function _proofArr(
-        ISAMM.Proof memory a,
-        ISAMM.Proof memory b,
-        ISAMM.Proof memory c
-    ) internal pure returns (ISAMM.Proof[] memory arr) {
+    function _proofArr(ISAMM.Proof memory a, ISAMM.Proof memory b, ISAMM.Proof memory c)
+        internal
+        pure
+        returns (ISAMM.Proof[] memory arr)
+    {
         arr = new ISAMM.Proof[](3);
         arr[0] = a;
         arr[1] = b;

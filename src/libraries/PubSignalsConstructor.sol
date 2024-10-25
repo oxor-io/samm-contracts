@@ -46,23 +46,23 @@ library PubSignalsConstructor {
         uint256 deadline
     ) internal view returns (bytes32[] memory pubSignals) {
         // public signals order: root, relayer, relayer_len, msg_hash, commit, pubkey_hash
-        pubSignals = new bytes32[](79);
+        pubSignals = new bytes32[](172);
 
         // root
         pubSignals[0] = bytes32(participantsRoot);
 
         // relayer
-        bytes32 relayerBytes32 = bytes32(bytes(relayer));
-        for (uint256 i = 0; i < 31; i++) {
-            pubSignals[1 + i] = bytes32(uint256(uint8(relayerBytes32[i])));
+        bytes memory relayerBytes = bytes(relayer);
+        for (uint256 i = 0; i < relayerBytes.length; i++) {
+            pubSignals[1 + i] = bytes32(uint256(uint8(relayerBytes[i])));
         }
-        pubSignals[32] = bytes32(uint256(bytes(relayer).length));
+        pubSignals[125] = bytes32(uint256(bytes(relayer).length));
 
         // msgHash
         bytes32 msgHash = getMsgHash(to, value, data, operation, nonce, deadline);
         bytes memory msgHash64 = bytes(Base64.encode(bytes.concat(msgHash)));
         for (uint256 i = 0; i < 44; i++) {
-            pubSignals[33 + i] = bytes32(uint256(uint8(msgHash64[i])));
+            pubSignals[126 + i] = bytes32(uint256(uint8(msgHash64[i])));
         }
     }
 }
