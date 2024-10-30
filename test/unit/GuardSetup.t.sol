@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import {Test} from "forge-std/Test.sol";
 import {IModuleGuard, ModuleGuard} from "../../src/ModuleGuard.sol";
-import { IModuleGuardErrors} from "../../src/interfaces/IModuleGuardErrors.sol";
+import {IModuleGuardErrors} from "../../src/interfaces/IModuleGuardErrors.sol";
 import {Setup} from "./Setup.sol";
 import {IMinimalSafeModuleManager} from "../../src/Safe/interfaces/IMinimalSafeModuleManager.sol";
 import {ISAMM} from "../../src/SAMM.sol";
@@ -21,7 +21,7 @@ contract GuardTest is Test, Setup {
     }
 
     // TODO: module guards support is required in safe
-    function test_safeIsSetCorrectly() external enableModuleForSafe(safe, sam)  {
+    function test_safeIsSetCorrectly() external enableModuleForSafe(safe, sam) {
         setModuleGuard(address(safe), address(guard));
     }
 
@@ -40,13 +40,24 @@ contract GuardTest is Test, Setup {
 
     function setModuleGuard(address safeContract, address module) internal {
         bytes memory cd = abi.encodeCall(IMinimalSafeModuleManager.setModuleGuard, (module));
-        bool success = sendTxToSafe(safeContract, address(this), safeContract, 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5);
+        bool success = sendTxToSafe(
+            safeContract, address(this), safeContract, 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5
+        );
         assertTrue(success);
     }
 
-    function setTxAllowed(address safeContract, address guardContract, address module, address to, bytes4 selector, bool isAllowed) internal {
+    function setTxAllowed(
+        address safeContract,
+        address guardContract,
+        address module,
+        address to,
+        bytes4 selector,
+        bool isAllowed
+    ) internal {
         bytes memory cd = abi.encodeCall(IModuleGuard.setTxAllowed, (module, to, selector, isAllowed));
-        bool success = sendTxToSafe(safeContract, address(this), guardContract, 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5);
+        bool success = sendTxToSafe(
+            safeContract, address(this), guardContract, 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5
+        );
         assertTrue(success);
     }
 }

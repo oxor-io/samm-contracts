@@ -8,7 +8,7 @@ import "../interfaces/IDKIMRegistry.sol";
  * A Registry that store the hash(dkim_public_key) for each domain
  *   The hash is calculated by taking Poseidon of DKIM key split into 9 chunks of 242 bits each
  *
- *   https://zkrepl.dev/?gist=43ce7dce2466c63812f6efec5b13aa73 can be used to generate the public key hash. 
+ *   https://zkrepl.dev/?gist=43ce7dce2466c63812f6efec5b13aa73 can be used to generate the public key hash.
  *   The same code is used in EmailVerifier.sol
  *   Input is DKIM pub key split into 17 chunks of 121 bits. You can use `helpers` package to fetch/split DKIM keys
  */
