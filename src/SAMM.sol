@@ -41,7 +41,7 @@ contract SAMM is Singleton, ISAMM {
     //Immutable Variables//
     ///////////////////////
 
-    // Verifier from repository: https://github.com/oxor-io/samm-circuits
+    // Verifiers from repository: https://github.com/oxor-io/samm-circuits
     Verifier1024 private immutable VERIFIER1024 = new Verifier1024();
     Verifier2048 private immutable VERIFIER2048 = new Verifier2048();
 
@@ -88,6 +88,9 @@ contract SAMM is Singleton, ISAMM {
      * @param safe The address of the Safe.
      * @param membersRoot The Merkle root of participant addresses.
      * @param threshold The minimum number of proofs required to execute a transaction.
+     * @param relayer The email address of Relayer.
+     * @param dkimRegistry The DKIM pubkeys registry contract address.
+     * @param txAllowances List of [address, selector] pairs which are initialy allowed.
      */
     function setup(
         address safe,
@@ -153,6 +156,7 @@ contract SAMM is Singleton, ISAMM {
      * @param data The data payload of the transaction.
      * @param operation The type of operation (CALL, DELEGATECALL).
      * @param proofs An array of zk proofs.
+     * @param deadline The deadline before which transaction should be executed.
      * @return success A boolean indicating whether the transaction was successful.
      */
     function executeTransaction(
@@ -178,6 +182,7 @@ contract SAMM is Singleton, ISAMM {
      * @param data The data payload of the transaction.
      * @param operation The type of operation (CALL, DELEGATECALL).
      * @param proofs An array of zk proofs.
+     * @param deadline The deadline before which transaction should be executed.
      * @return success A boolean indicating whether the transaction was successful.
      * @return returnData The data returned by the transaction execution.
      */
@@ -192,7 +197,10 @@ contract SAMM is Singleton, ISAMM {
         (success, returnData) = _executeTransaction(to, value, data, operation, proofs, deadline);
     }
 
-    /// @notice Updates threshold parameter.
+    /**
+     * @notice Updates threshold parameter.
+     * @param threshold The new threshold value.
+     */
     function setThreshold(uint64 threshold) external {
         if (msg.sender != address(s_safe)) {
             revert SAMM__notSafe();
@@ -207,7 +215,10 @@ contract SAMM is Singleton, ISAMM {
         emit ThresholdIsChanged(threshold);
     }
 
-    /// @notice Updates members root parameter.
+    /**
+     * @notice Updates members root parameter.
+     * @param membersRoot The new members' root value.
+     */
     function setMembersRoot(uint256 membersRoot) external {
         if (msg.sender != address(s_safe)) {
             revert SAMM__notSafe();
@@ -222,7 +233,10 @@ contract SAMM is Singleton, ISAMM {
         emit MembersRootIsChanged(membersRoot);
     }
 
-    /// @notice Updates DKIM registry parameter.
+    /**
+     * @notice Updates DKIM registry parameter.
+     * @param dkimRegistry The new DKIM registry address.
+     */
     function setDKIMRegistry(address dkimRegistry) external {
         if (msg.sender != address(s_safe)) {
             revert SAMM__notSafe();
@@ -237,7 +251,10 @@ contract SAMM is Singleton, ISAMM {
         emit DKIMRegistryIsChanged(dkimRegistry);
     }
 
-    /// @notice Updates relayer email address parameter.
+    /**
+     * @notice Updates relayer email address parameter.
+     * @param relayer The new relayer email address.
+     */
     function setRelayer(string calldata relayer) external {
         if (msg.sender != address(s_safe)) {
             revert SAMM__notSafe();
@@ -256,6 +273,12 @@ contract SAMM is Singleton, ISAMM {
         emit RelayerIsChanged(relayer);
     }
 
+    /**
+     * @notice Updates list of allowed transactions.
+     * @param to The destination address of new transaction.
+     * @param selector The selector of new transaction.
+     * @param isAllowed Boolean: 1 if the transaction is allowed, 0 if the transaction is not allowed anymore.
+     */
     function setTxAllowed(address to, bytes4 selector, bool isAllowed) external {
         address _safe = address(s_safe);
         if (msg.sender != _safe) {
@@ -271,6 +294,11 @@ contract SAMM is Singleton, ISAMM {
         emit TxAllowanceChanged(to, selector, isAllowed);
     }
 
+    /**
+     * @notice Updates allowance mapping.
+     * @param to The destination address for which allowance is changing.
+     * @param amount The new allowance value.
+     */
     function setAllowance(address to, uint256 amount) external {
         address _safe = address(s_safe);
         if (msg.sender != _safe) {
@@ -333,6 +361,7 @@ contract SAMM is Singleton, ISAMM {
      * @param data The data payload of the transaction.
      * @param operation The type of operation (CALL, DELEGATECALL).
      * @param nonce The nonce to be used for the transaction.
+     * @param deadline The deadline before which transaction should be executed.
      * @return msgHash The resulting message hash.
      */
     function getMessageHash(

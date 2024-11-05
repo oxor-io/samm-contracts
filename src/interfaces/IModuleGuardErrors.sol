@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 interface IModuleGuardErrors {
-    // TODO refactor errors
     error ModuleGuard__alreadyInitialized();
     error ModuleGuard__txIsNotAllowed();
     error ModuleGuard__allowanceIsNotEnough();

@@ -63,6 +63,13 @@ contract ModuleGuard is Singleton, IModuleGuard {
         emit Setup(msg.sender, _safe);
     }
 
+    /**
+     * @notice Updates list of allowed transactions.
+     * @param module The address of module, for which allowed transactions list is changing.
+     * @param to The destination address of new transaction.
+     * @param selector The selector of new transaction.
+     * @param isAllowed Boolean: 1 if the transaction is allowed, 0 if the transaction is not allowed anymore.
+     */
     function setTxAllowed(address module, address to, bytes4 selector, bool isAllowed) external {
         address _safe = address(safe);
         if (msg.sender != _safe) {
@@ -81,6 +88,12 @@ contract ModuleGuard is Singleton, IModuleGuard {
         emit TxAllowanceChanged(module, to, selector, isAllowed);
     }
 
+    /**
+     * @notice Updates allowance mapping.
+     * @param module The address of module, for which allowance mapping is changing.
+     * @param to The destination address for which allowance is changing.
+     * @param amount The new allowance value.
+     */
     function setAllowance(address module, address to, uint256 amount) external {
         address _safe = address(safe);
         if (msg.sender != _safe) {
@@ -143,15 +156,14 @@ contract ModuleGuard is Singleton, IModuleGuard {
     }
 
     function supportsInterface(bytes4 interfaceId) external view virtual override returns (bool) {
-        return
-            interfaceId == type(IModuleGuard).interfaceId || // 0x58401ed8
-            interfaceId == type(IERC165).interfaceId; // 0x01ffc9a7
+        return interfaceId == type(IModuleGuard).interfaceId // 0x58401ed8
+            || interfaceId == type(IERC165).interfaceId; // 0x01ffc9a7
     }
 
     //////////////////////////////
     //   Functions - Private    //
     //////////////////////////////
-    function _getABISig(bytes memory data) private pure returns(bytes4 sig){
+    function _getABISig(bytes memory data) private pure returns (bytes4 sig) {
         assembly {
             sig := mload(add(data, 0x20))
         }
