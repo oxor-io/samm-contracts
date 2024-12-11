@@ -150,5 +150,28 @@ contract SAMExecuteTxTest is Test, Setup {
 
         sendTxToSafe(address(safe), address(this), address(sam), 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5);
         assertEq(sam.getMembersRoot(), newValue);
+
+        // Try to set allowed tx
+        bytes4 selector = 0x11111111;
+        cd = abi.encodeCall(SAMM.setTxAllowed, (DEFAULT_TO, selector, true));
+
+        sendTxToSafe(address(safe), address(this), address(sam), 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5);
+        ISAMM.TxAllowance[] memory allowedTxs = sam.getAllowedTxs();
+        bool isRepresent;
+        for (uint256 i; i < allowedTxs.length; i++) {
+            if (allowedTxs[i].to == DEFAULT_TO && allowedTxs[i].selector == selector) isRepresent = true;
+        }
+        assertEq(isRepresent, true, "Set allowed tx failed! New tx is not stored");
+
+        // Try to remove allowed tx
+        cd = abi.encodeCall(SAMM.setTxAllowed, (DEFAULT_TO, selector, false));
+
+        sendTxToSafe(address(safe), address(this), address(sam), 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5);
+        allowedTxs = sam.getAllowedTxs();
+        isRepresent = false;
+        for (uint256 i; i < allowedTxs.length; i++) {
+            if (allowedTxs[i].to == DEFAULT_TO && allowedTxs[i].selector == selector) isRepresent = true;
+        }
+        assertEq(isRepresent, false, "Remove allowed tx failed! New tx is stored");
     }
 }

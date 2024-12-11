@@ -23,7 +23,7 @@ contract Setup is Test {
 
     // Helpers for tests
     uint256 internal constant DEFAULT_ROOT =
-        3693852034816220969980398025931646744713742489852125909138985185751997118833; // From 10 default anvil accounts
+        3693852034816220969980398025931646744713742489852125909138985185751997118833; // From default accounts
 
     uint64 internal constant DEFAULT_THRESHOLD = 1;
     string internal constant DEFAULT_RELAYER = "ad@oxor.io";

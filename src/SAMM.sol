@@ -25,6 +25,7 @@ import {HonkVerifier as Verifier2048} from "./utils/Verifier2048.sol";
 
 // Libs
 import {PubSignalsConstructor} from "./libraries/PubSignalsConstructor.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 // Interfaces
 import {ISAMM} from "./interfaces/ISAMM.sol";
@@ -37,6 +38,8 @@ import {IDKIMRegistry} from "./interfaces/IDKIMRegistry.sol";
 /// It allows users to execute transactions for a specified Safe without revealing the addresses of the members who voted to execute the transaction.
 /// @dev This contract should be used as a singleton. And proxy contracts must use delegatecall to use the contract logic.
 contract SAMM is Singleton, ISAMM {
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     ///////////////////////
     //Immutable Variables//
     ///////////////////////
@@ -60,7 +63,7 @@ contract SAMM is Singleton, ISAMM {
 
     // A whitelist of contract addresses and function signatures
     // with which the SAMM module can interact on behalf of the Safe multisig
-    mapping(address to => mapping(bytes4 selector => bool)) public isTxAllowed;
+    EnumerableSet.Bytes32Set private allowedTxs; // abi.encodePacked(bytes20(address),bytes4(signature))
 
     // A limit on the amount of ETH that can be transferred
     // to a single address in the whitelist.
@@ -131,7 +134,7 @@ contract SAMM is Singleton, ISAMM {
             if (txAllowances[i].to == safe || txAllowances[i].to == address(0)) {
                 revert SAMM__toIsWrong();
             }
-            isTxAllowed[txAllowances[i].to][txAllowances[i].selector] = true;
+            allowedTxs.add(bytes32(abi.encodePacked(bytes20(txAllowances[i].to), txAllowances[i].selector)));
             allowance[txAllowances[i].to] = txAllowances[i].amount;
         }
 
@@ -287,10 +290,13 @@ contract SAMM is Singleton, ISAMM {
         if (to == _safe || to == address(0)) {
             revert SAMM__toIsWrong();
         }
-        if (isAllowed == isTxAllowed[to][selector]) {
-            revert SAMM__noChanges();
+        bool success;
+        if (isAllowed) {
+            success = allowedTxs.add(bytes32(abi.encodePacked(bytes20(to), selector)));
+        } else {
+            success = allowedTxs.remove(bytes32(abi.encodePacked(bytes20(to), selector)));
         }
-        isTxAllowed[to][selector] = isAllowed;
+        if (!success) revert SAMM__noChanges();
         emit TxAllowanceChanged(to, selector, isAllowed);
     }
 
@@ -352,6 +358,25 @@ contract SAMM is Singleton, ISAMM {
     /// @return nonce The current nonce.
     function getNonce() external view returns (uint256 nonce) {
         return s_nonce;
+    }
+
+    /// @notice Retrieves the current list of allowed transactions.
+    /// @return List of allowed transactions.
+    function getAllowedTxs() external view returns (TxAllowance[] memory) {
+        bytes32[] memory _allowedTxs = allowedTxs.values();
+        TxAllowance[] memory txAllowances = new TxAllowance[](_allowedTxs.length);
+
+        address to;
+        bytes4 selector;
+        uint256 amount;
+        for (uint256 i; i < _allowedTxs.length; i++) {
+            // decode allowedTxs storage
+            to = address(bytes20(_allowedTxs[i]));
+            selector = bytes4(_allowedTxs[i] << 160);
+            amount = allowance[to];
+            txAllowances[i] = TxAllowance(to, selector, amount);
+        }
+        return txAllowances;
     }
 
     /**
@@ -419,7 +444,7 @@ contract SAMM is Singleton, ISAMM {
         assembly {
             selector := mload(add(data, 0x20))
         }
-        if (!isTxAllowed[to][selector]) {
+        if (!allowedTxs.contains(bytes32(abi.encodePacked(bytes20(to), selector)))) {
             revert SAMM__txIsNotAllowed();
         }
         if (allowance[to] < value) {
