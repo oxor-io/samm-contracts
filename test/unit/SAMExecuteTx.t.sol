@@ -175,4 +175,12 @@ contract SAMExecuteTxTest is Test, Setup {
         }
         assertEq(isRepresent, false, "Remove allowed tx failed! New tx is stored");
     }
+
+    function test_allowSendETH() external enableModuleForSafe(safe, sam) {
+        // Try to set allowed tx
+        bytes4 selector = 0x00000000;
+        ISAMM.TxAllowance memory txAllowance = ISAMM.TxAllowance(DEFAULT_TO, selector, 1 ether);
+        bytes memory cd = abi.encodeCall(SAMM.setTxAllowed, (txAllowance, true));
+        sendTxToSafe(address(safe), address(this), address(sam), 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5);
+    }
 }
