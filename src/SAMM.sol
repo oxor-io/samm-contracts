@@ -63,11 +63,11 @@ contract SAMM is Singleton, ISAMM {
 
     // A whitelist of contract addresses and function signatures
     // with which the SAMM module can interact on behalf of the Safe multisig
-    EnumerableSet.Bytes32Set private allowedTxs; // abi.encodePacked(bytes20(address),bytes4(signature))
+    EnumerableSet.Bytes32Set private s_allowedTxs; // abi.encodePacked(bytes20(address),bytes4(signature))
 
     // A limit on the amount of ETH that can be transferred
-    // to a single address in the whitelist.
-    mapping(address to => uint256) public allowance;
+    // to a single (address,signature) in the whitelist.
+    mapping(bytes32 => uint256) private s_allowance;
 
     //////////////////////////////
     // Functions - Constructor  //
@@ -130,12 +130,14 @@ contract SAMM is Singleton, ISAMM {
             }
         }
 
+        bytes32 txId;
         for (uint256 i; i < txAllowances.length; i++) {
             if (txAllowances[i].to == safe || txAllowances[i].to == address(0)) {
                 revert SAMM__toIsWrong();
             }
-            allowedTxs.add(bytes32(abi.encodePacked(bytes20(txAllowances[i].to), txAllowances[i].selector)));
-            allowance[txAllowances[i].to] = txAllowances[i].amount;
+            txId = bytes32(abi.encodePacked(bytes20(txAllowances[i].to), txAllowances[i].selector));
+            s_allowedTxs.add(txId);
+            s_allowance[txId] = txAllowances[i].amount;
         }
 
         s_safe = ISafe(safe);
@@ -278,46 +280,48 @@ contract SAMM is Singleton, ISAMM {
 
     /**
      * @notice Updates list of allowed transactions.
-     * @param to The destination address of new transaction.
-     * @param selector The selector of new transaction.
+     * @param txAllowance TxAllowance structure of new transaction.
      * @param isAllowed Boolean: 1 if the transaction is allowed, 0 if the transaction is not allowed anymore.
      */
-    function setTxAllowed(address to, bytes4 selector, bool isAllowed) external {
+    function setTxAllowed(TxAllowance calldata txAllowance, bool isAllowed) external {
         address _safe = address(s_safe);
         if (msg.sender != _safe) {
             revert SAMM__notSafe();
         }
-        if (to == _safe || to == address(0)) {
+        if (txAllowance.to == _safe || txAllowance.to == address(0)) {
             revert SAMM__toIsWrong();
         }
         bool success;
+        bytes32 txId = bytes32(abi.encodePacked(bytes20(txAllowance.to), txAllowance.selector));
         if (isAllowed) {
-            success = allowedTxs.add(bytes32(abi.encodePacked(bytes20(to), selector)));
+            success = s_allowedTxs.add(txId);
+            s_allowance[txId] = txAllowance.amount;
         } else {
-            success = allowedTxs.remove(bytes32(abi.encodePacked(bytes20(to), selector)));
+            success = s_allowedTxs.remove(txId);
+            s_allowance[txId] = 0;
         }
         if (!success) revert SAMM__noChanges();
-        emit TxAllowanceChanged(to, selector, isAllowed);
+        emit TxAllowanceChanged(txId, txAllowance.amount, isAllowed);
     }
 
     /**
      * @notice Updates allowance mapping.
-     * @param to The destination address for which allowance is changing.
+     * @param txId Transaction id for which allowance is changing.
      * @param amount The new allowance value.
      */
-    function setAllowance(address to, uint256 amount) external {
+    function changeAllowance(bytes32 txId, uint256 amount) external {
         address _safe = address(s_safe);
         if (msg.sender != _safe) {
             revert SAMM__notSafe();
         }
-        if (to == _safe || to == address(0)) {
-            revert SAMM__toIsWrong();
+        if (!s_allowedTxs.contains(txId)) {
+            revert SAMM__txIsNotAllowed();
         }
-        if (amount == allowance[to]) {
+        if (amount == s_allowance[txId]) {
             revert SAMM__noChanges();
         }
-        allowance[to] = amount;
-        emit AllowanceChanged(to, amount);
+        s_allowance[txId] = amount;
+        emit AllowanceChanged(txId, amount);
     }
 
     //////////////////////////////
@@ -363,17 +367,17 @@ contract SAMM is Singleton, ISAMM {
     /// @notice Retrieves the current list of allowed transactions.
     /// @return List of allowed transactions.
     function getAllowedTxs() external view returns (TxAllowance[] memory) {
-        bytes32[] memory _allowedTxs = allowedTxs.values();
-        TxAllowance[] memory txAllowances = new TxAllowance[](_allowedTxs.length);
+        bytes32[] memory allowedTxs = s_allowedTxs.values();
+        TxAllowance[] memory txAllowances = new TxAllowance[](allowedTxs.length);
 
         address to;
         bytes4 selector;
         uint256 amount;
-        for (uint256 i; i < _allowedTxs.length; i++) {
+        for (uint256 i; i < allowedTxs.length; i++) {
             // decode allowedTxs storage
-            to = address(bytes20(_allowedTxs[i]));
-            selector = bytes4(_allowedTxs[i] << 160);
-            amount = allowance[to];
+            to = address(bytes20(allowedTxs[i]));
+            selector = bytes4(allowedTxs[i] << 160);
+            amount = s_allowance[allowedTxs[i]];
             txAllowances[i] = TxAllowance(to, selector, amount);
         }
         return txAllowances;
@@ -444,10 +448,11 @@ contract SAMM is Singleton, ISAMM {
         assembly {
             selector := mload(add(data, 0x20))
         }
-        if (!allowedTxs.contains(bytes32(abi.encodePacked(bytes20(to), selector)))) {
+        bytes32 txId = bytes32(abi.encodePacked(bytes20(to), selector));
+        if (!s_allowedTxs.contains(txId)) {
             revert SAMM__txIsNotAllowed();
         }
-        if (allowance[to] < value) {
+        if (s_allowance[txId] < value) {
             revert SAMM__allowanceIsNotEnough();
         }
     }

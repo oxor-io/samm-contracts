@@ -31,6 +31,6 @@ interface ISAMMEvents {
     event MembersRootIsChanged(uint256 newRoot);
     event DKIMRegistryIsChanged(address dkimRegistry);
     event RelayerIsChanged(string relayer);
-    event AllowanceChanged(address indexed to, uint256 amount);
-    event TxAllowanceChanged(address indexed to, bytes4 selector, bool isAllowed);
+    event AllowanceChanged(bytes32 indexed txId, uint256 amount);
+    event TxAllowanceChanged(bytes32 indexed txId, uint256 amount, bool isAllowed);
 }

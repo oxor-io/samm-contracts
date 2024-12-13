@@ -153,7 +153,8 @@ contract SAMExecuteTxTest is Test, Setup {
 
         // Try to set allowed tx
         bytes4 selector = 0x11111111;
-        cd = abi.encodeCall(SAMM.setTxAllowed, (DEFAULT_TO, selector, true));
+        ISAMM.TxAllowance memory txAllowance = ISAMM.TxAllowance(DEFAULT_TO, selector, 0);
+        cd = abi.encodeCall(SAMM.setTxAllowed, (txAllowance, true));
 
         sendTxToSafe(address(safe), address(this), address(sam), 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5);
         ISAMM.TxAllowance[] memory allowedTxs = sam.getAllowedTxs();
@@ -164,7 +165,7 @@ contract SAMExecuteTxTest is Test, Setup {
         assertEq(isRepresent, true, "Set allowed tx failed! New tx is not stored");
 
         // Try to remove allowed tx
-        cd = abi.encodeCall(SAMM.setTxAllowed, (DEFAULT_TO, selector, false));
+        cd = abi.encodeCall(SAMM.setTxAllowed, (txAllowance, false));
 
         sendTxToSafe(address(safe), address(this), address(sam), 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5);
         allowedTxs = sam.getAllowedTxs();

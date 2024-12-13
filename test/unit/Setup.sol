@@ -104,7 +104,8 @@ contract Setup is Test {
             selector := mload(add(data, 0x20))
         }
         vm.prank(address(safe));
-        sam.setTxAllowed(DEFAULT_TO, selector, true);
+        ISAMM.TxAllowance memory txAllowance = ISAMM.TxAllowance(DEFAULT_TO, selector, 0);
+        sam.setTxAllowed(txAllowance, true);
 
         // Create Guard module
         guardSingleton = new ModuleGuard();
