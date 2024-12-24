@@ -32,7 +32,7 @@ To get started with this project, you need to install Foundry.
     ```
 2. Close the terminal, open another one, and run:
     ```
-        foundryup --version 0.2.0
+        foundryup --commit 7cbd55e
     ```
 Complete instructions for installing Foundry can be [found here](https://book.getfoundry.sh/getting-started/installation).
 
