@@ -104,7 +104,7 @@ contract Setup is Test {
             selector := mload(add(data, 0x20))
         }
         vm.prank(address(safe));
-        ISAMM.TxAllowance memory txAllowance = ISAMM.TxAllowance(DEFAULT_TO, selector, 0);
+        ISAMM.TxAllowance memory txAllowance = ISAMM.TxAllowance(DEFAULT_TO, selector, 0, IMinimalSafeModuleManager.Operation.Call);
         sam.setTxAllowed(txAllowance, true);
 
         // Create Guard module

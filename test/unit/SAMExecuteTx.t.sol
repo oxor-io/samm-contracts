@@ -153,14 +153,15 @@ contract SAMExecuteTxTest is Test, Setup {
 
         // Try to set allowed tx
         bytes4 selector = 0x11111111;
-        ISAMM.TxAllowance memory txAllowance = ISAMM.TxAllowance(DEFAULT_TO, selector, 0);
+        ISAMM.TxAllowance memory txAllowance = ISAMM.TxAllowance(DEFAULT_TO, selector, 0, IMinimalSafeModuleManager.Operation.Call);
         cd = abi.encodeCall(SAMM.setTxAllowed, (txAllowance, true));
 
         sendTxToSafe(address(safe), address(this), address(sam), 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5);
         ISAMM.TxAllowance[] memory allowedTxs = sam.getAllowedTxs();
         bool isRepresent;
         for (uint256 i; i < allowedTxs.length; i++) {
-            if (allowedTxs[i].to == DEFAULT_TO && allowedTxs[i].selector == selector) isRepresent = true;
+            if (allowedTxs[i].to == DEFAULT_TO && allowedTxs[i].selector == selector && 
+            allowedTxs[i].operation == IMinimalSafeModuleManager.Operation.Call) isRepresent = true;
         }
         assertEq(isRepresent, true, "Set allowed tx failed! New tx is not stored");
 
@@ -179,7 +180,7 @@ contract SAMExecuteTxTest is Test, Setup {
     function test_allowSendETH() external enableModuleForSafe(safe, sam) {
         // Try to set allowed tx
         bytes4 selector = 0x00000000;
-        ISAMM.TxAllowance memory txAllowance = ISAMM.TxAllowance(DEFAULT_TO, selector, 1 ether);
+        ISAMM.TxAllowance memory txAllowance = ISAMM.TxAllowance(DEFAULT_TO, selector, 1 ether, IMinimalSafeModuleManager.Operation.Call);
         bytes memory cd = abi.encodeCall(SAMM.setTxAllowed, (txAllowance, true));
         sendTxToSafe(address(safe), address(this), address(sam), 0, cd, IMinimalSafeModuleManager.Operation.Call, 1e5);
     }
