@@ -131,14 +131,8 @@ contract SAMM is Singleton, ISAMM {
             }
         }
 
-        bytes32 txId;
         for (uint256 i; i < txAllowances.length; i++) {
-            if (txAllowances[i].to == safe || txAllowances[i].to == address(0)) {
-                revert SAMM__toIsWrong();
-            }
-            txId = bytes32(abi.encodePacked(bytes20(txAllowances[i].to), txAllowances[i].selector, uint8(txAllowances[i].operation)));
-            s_allowedTxs.add(txId);
-            s_allowance[txId] = txAllowances[i].amount;
+            _setTxAllowed(txAllowances[i], true);
         }
 
         s_safe = ISafe(safe);
@@ -285,24 +279,10 @@ contract SAMM is Singleton, ISAMM {
      * @param isAllowed Boolean: 1 if the transaction is allowed, 0 if the transaction is not allowed anymore.
      */
     function setTxAllowed(TxAllowance calldata txAllowance, bool isAllowed) external {
-        address _safe = address(s_safe);
-        if (msg.sender != _safe) {
+        if (msg.sender != address(s_safe)) {
             revert SAMM__notSafe();
         }
-        if (txAllowance.to == _safe || txAllowance.to == address(0)) {
-            revert SAMM__toIsWrong();
-        }
-        bool success;
-        bytes32 txId = bytes32(abi.encodePacked(bytes20(txAllowance.to), txAllowance.selector, uint8(txAllowance.operation)));
-        if (isAllowed) {
-            success = s_allowedTxs.add(txId);
-            s_allowance[txId] = txAllowance.amount;
-        } else {
-            success = s_allowedTxs.remove(txId);
-            s_allowance[txId] = 0;
-        }
-        if (!success) revert SAMM__noChanges();
-        emit TxAllowanceChanged(txId, txAllowance.amount, isAllowed);
+        _setTxAllowed(txAllowance, isAllowed);
     }
 
     /**
@@ -444,6 +424,23 @@ contract SAMM is Singleton, ISAMM {
         _checkNProofs(proofs, pubSignals);
 
         return s_safe.execTransactionFromModuleReturnData(to, value, data, operation);
+    }
+
+    function _setTxAllowed(TxAllowance calldata txAllowance, bool isAllowed) private {
+        if (txAllowance.to == address(s_safe) || txAllowance.to == address(0)) {
+            revert SAMM__toIsWrong();
+        }
+        bool success;
+        bytes32 txId = bytes32(abi.encodePacked(bytes20(txAllowance.to), txAllowance.selector, uint8(txAllowance.operation)));
+        if (isAllowed) {
+            success = s_allowedTxs.add(txId);
+            s_allowance[txId] = txAllowance.amount;
+        } else {
+            success = s_allowedTxs.remove(txId);
+            s_allowance[txId] = 0;
+        }
+        if (!success) revert SAMM__noChanges();
+        emit TxAllowanceChanged(txId, txAllowance.amount, isAllowed);
     }
 
     function _checkTxAllowance(address to, uint256 value, bytes memory data, ISafe.Operation operation) private view {
