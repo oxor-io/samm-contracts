@@ -472,7 +472,7 @@ contract SAMM is Singleton, ISAMM {
             // Commit must be uniq, because it is a hash(userEmail, msgHash)
             for (uint256 j; j < i; j++) {
                 if (proofs[j].commit == currentProof.commit) {
-                    revert SAMM__commitAlreadyUsed(i);
+                    revert SAMM__commitAlreadyUsed(j);
                 }
             }
 
