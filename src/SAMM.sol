@@ -118,12 +118,20 @@ contract SAMM is Singleton, ISAMM {
                 revert SAMM__rootIsZero();
             }
 
+            if (membersRoot >= 2**254) {
+                revert SAMM__rootOutOfField();
+            }
+
             if (threshold == 0) {
                 revert SAMM__thresholdIsZero();
             }
 
             if (bytes(relayer).length == 0) {
                 revert SAMM__emptyRelayer();
+            }
+
+            if (bytes(relayer).length > 124) {
+                revert SAMM__longRelayer();
             }
 
             if (dkimRegistry == address(0)) {
@@ -226,6 +234,10 @@ contract SAMM is Singleton, ISAMM {
 
         if (membersRoot == 0) {
             revert SAMM__rootIsZero();
+        }
+
+        if (membersRoot >= 2**254) {
+            revert SAMM__rootOutOfField();
         }
 
         s_membersRoot = membersRoot;
