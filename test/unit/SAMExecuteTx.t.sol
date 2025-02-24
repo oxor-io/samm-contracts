@@ -86,7 +86,7 @@ contract SAMExecuteTxTest is Test, Setup {
     function test_sameProofCantBeUsedTwiceInSameTx() external enableModuleForSafe(safe, sam) {
         ISAMM.Proof memory proof = defaultCorrectProof();
 
-        vm.expectRevert(abi.encodeWithSelector(ISAMMErrors.SAMM__commitAlreadyUsed.selector, 1));
+        vm.expectRevert(abi.encodeWithSelector(ISAMMErrors.SAMM__commitAlreadyUsed.selector, 0));
         sam.executeTransactionReturnData(
             DEFAULT_TO,
             0,

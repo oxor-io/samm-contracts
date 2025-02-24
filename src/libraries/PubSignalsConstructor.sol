@@ -38,6 +38,7 @@ library PubSignalsConstructor {
     function getPubSignals(
         uint256 participantsRoot,
         string memory relayer,
+        address relayer_addr,
         address to,
         uint256 value,
         bytes memory data,
@@ -45,8 +46,8 @@ library PubSignalsConstructor {
         uint256 nonce,
         uint256 deadline
     ) internal view returns (bytes32[] memory pubSignals) {
-        // public signals order: root, relayer, relayer_len, msg_hash, commit, pubkey_hash
-        pubSignals = new bytes32[](172);
+        // public signals order: root, domain, domain_len, relayer, relayer_len, relayer_addr, msg_hash, commit, pubkey_hash
+        pubSignals = new bytes32[](198);
 
         // root
         pubSignals[0] = bytes32(participantsRoot);
@@ -54,15 +55,18 @@ library PubSignalsConstructor {
         // relayer
         bytes memory relayerBytes = bytes(relayer);
         for (uint256 i = 0; i < relayerBytes.length; i++) {
-            pubSignals[1 + i] = bytes32(uint256(uint8(relayerBytes[i])));
+            pubSignals[26 + i] = bytes32(uint256(uint8(relayerBytes[i])));
         }
-        pubSignals[125] = bytes32(uint256(bytes(relayer).length));
+        pubSignals[150] = bytes32(uint256(relayerBytes.length));
+
+        // relayer_addr
+        pubSignals[151] = bytes32(uint256(uint160(relayer_addr)));
 
         // msgHash
         bytes32 msgHash = getMsgHash(to, value, data, operation, nonce, deadline);
         bytes memory msgHash64 = bytes(Base64.encode(bytes.concat(msgHash)));
         for (uint256 i = 0; i < 44; i++) {
-            pubSignals[126 + i] = bytes32(uint256(uint8(msgHash64[i])));
+            pubSignals[152 + i] = bytes32(uint256(uint8(msgHash64[i])));
         }
     }
 }

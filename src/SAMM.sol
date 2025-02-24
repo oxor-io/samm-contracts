@@ -425,9 +425,9 @@ contract SAMM is Singleton, ISAMM {
         // Check tx allowance
         _checkTxAllowance(to, value, data, operation);
 
-        // pubSignals = [root, relayer, relayer_len, msg_hash, pubkey_mod, redc_params]
+        // pubSignals = [root, domain, domain_len, relayer, relayer_len, relayer_addr, msg_hash, pubkey_mod, redc_params]
         bytes32[] memory pubSignals =
-            PubSignalsConstructor.getPubSignals(root, s_relayer, to, value, data, operation, s_nonce++, deadline);
+            PubSignalsConstructor.getPubSignals(root, s_relayer, msg.sender, to, value, data, operation, s_nonce++, deadline);
 
         if (s_threshold > proofs.length) {
             revert SAMM__notEnoughProofs(proofs.length, s_threshold);
@@ -488,8 +488,13 @@ contract SAMM is Singleton, ISAMM {
                 }
             }
 
-            pubSignals[170] = bytes32(currentProof.commit);
-            pubSignals[171] = currentProof.pubkeyHash;
+            bytes memory domainBytes = bytes(currentProof.domain);
+            for (uint256 i = 0; i < domainBytes.length; i++) {
+                pubSignals[1 + i] = bytes32(uint256(uint8(domainBytes[i])));
+            }
+            pubSignals[25] = bytes32(uint256(domainBytes.length));
+            pubSignals[196] = bytes32(currentProof.commit);
+            pubSignals[197] = currentProof.pubkeyHash;
             bool result;
             if (currentProof.is2048sig) {
                 result = VERIFIER2048.verify({proof: currentProof.proof, publicInputs: pubSignals});
