@@ -22,7 +22,6 @@ contract ModuleGuard is Singleton, IModuleGuard {
     ISafe private safe;
 
     // A whitelist of contract addresses and function signatures
-    // with which the SAMM module can interact on behalf of the Safe multisig
     mapping(address module => mapping(address to => mapping(bytes4 selector => bool))) public isTxAllowed;
 
     // A limit on the amount of ETH that can be transferred

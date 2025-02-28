@@ -21,7 +21,7 @@ pragma solidity 0.8.23;
 // Contracts
 import {Singleton} from "./Safe/common/Singleton.sol";
 import {HonkVerifier as Verifier1024} from "./utils/Verifier1024.sol";
-import {HonkVerifier as Verifier2048} from "./utils/Verifier2048.sol";
+import {MODULUS, HonkVerifier as Verifier2048} from "./utils/Verifier2048.sol";
 
 // Libs
 import {PubSignalsConstructor} from "./libraries/PubSignalsConstructor.sol";
@@ -64,7 +64,7 @@ contract SAMM is Singleton, ISAMM {
 
     // A whitelist of contract addresses and function signatures
     // with which the SAMM module can interact on behalf of the Safe multisig
-    EnumerableSet.Bytes32Set private s_allowedTxs; // abi.encodePacked(bytes20(address),bytes4(signature))
+    EnumerableSet.Bytes32Set private s_allowedTxs; // abi.encodePacked(bytes20(address),bytes4(signature), uint8(operation))
 
     // A limit on the amount of ETH that can be transferred
     // to a single (address,signature) in the whitelist.
@@ -118,7 +118,7 @@ contract SAMM is Singleton, ISAMM {
                 revert SAMM__rootIsZero();
             }
 
-            if (membersRoot >= 2**254) {
+            if (membersRoot >= MODULUS) {
                 revert SAMM__rootOutOfField();
             }
 
@@ -155,7 +155,7 @@ contract SAMM is Singleton, ISAMM {
     /**
      * @notice Executes a transaction with zk proofs without returning data.
      * @dev Revert in case:
-     *          - Not enough proofs provided (threshold > hash approval amount + amount of provided proofs).
+     *          - Not enough proofs provided (threshold > amount of provided proofs).
      *          - Contract not initialized.
      *          - One of the proof commits has already been used.
      *          - One of the proof is invalid.
@@ -164,7 +164,7 @@ contract SAMM is Singleton, ISAMM {
      * @param data The data payload of the transaction.
      * @param operation The type of operation (CALL, DELEGATECALL).
      * @param proofs An array of zk proofs.
-     * @param deadline The deadline before which transaction should be executed.
+     * @param deadline The deadline after which transaction can not be executed.
      * @return success A boolean indicating whether the transaction was successful.
      */
     function executeTransaction(
@@ -181,7 +181,7 @@ contract SAMM is Singleton, ISAMM {
     /**
      * @notice Executes a transaction with zk proofs and returns the returned by the transaction execution.
      * @dev Revert in case:
-     *          - Not enough proofs provided (threshold > hash approval amount + amount of provided proofs).
+     *          - Not enough proofs provided (threshold > amount of provided proofs).
      *          - Contract not initialized.
      *          - One of the proof commits has already been used.
      *          - One of the proof is invalid.
@@ -190,7 +190,7 @@ contract SAMM is Singleton, ISAMM {
      * @param data The data payload of the transaction.
      * @param operation The type of operation (CALL, DELEGATECALL).
      * @param proofs An array of zk proofs.
-     * @param deadline The deadline before which transaction should be executed.
+     * @param deadline The deadline after which transaction can not be executed.
      * @return success A boolean indicating whether the transaction was successful.
      * @return returnData The data returned by the transaction execution.
      */
@@ -236,7 +236,7 @@ contract SAMM is Singleton, ISAMM {
             revert SAMM__rootIsZero();
         }
 
-        if (membersRoot >= 2**254) {
+        if (membersRoot >= MODULUS) {
             revert SAMM__rootOutOfField();
         }
 
