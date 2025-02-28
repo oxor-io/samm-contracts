@@ -30,10 +30,11 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 // Interfaces
 import {ISAMM} from "./interfaces/ISAMM.sol";
 import {ISafe} from "./Safe/interfaces/ISafe.sol";
+import {IMinimalSafeModuleManager} from "./Safe/interfaces/IMinimalSafeModuleManager.sol";
 import {IDKIMRegistry} from "./interfaces/IDKIMRegistry.sol";
 
 /// @title Safe Anonymization Mail Module
-/// @author Vladimir Kumalagov (@KumaCrypto, @dry914)
+/// @author Vladimir Kumalagov, Drygin Alexander (@KumaCrypto, @dry914)
 /// @notice This contract is a module for Safe Wallet (Gnosis Safe), aiming to provide anonymity for users.
 /// It allows users to execute transactions for a specified Safe without revealing the addresses of the members who voted to execute the transaction.
 /// @dev This contract should be used as a singleton. And proxy contracts must use delegatecall to use the contract logic.
@@ -117,6 +118,10 @@ contract SAMM is Singleton, ISAMM {
                 revert SAMM__rootIsZero();
             }
 
+            if (membersRoot >= 2**254) {
+                revert SAMM__rootOutOfField();
+            }
+
             if (threshold == 0) {
                 revert SAMM__thresholdIsZero();
             }
@@ -125,19 +130,17 @@ contract SAMM is Singleton, ISAMM {
                 revert SAMM__emptyRelayer();
             }
 
+            if (bytes(relayer).length > 124) {
+                revert SAMM__longRelayer();
+            }
+
             if (dkimRegistry == address(0)) {
                 revert SAMM__dkimRegistryIsZero();
             }
         }
 
-        bytes32 txId;
         for (uint256 i; i < txAllowances.length; i++) {
-            if (txAllowances[i].to == safe || txAllowances[i].to == address(0)) {
-                revert SAMM__toIsWrong();
-            }
-            txId = bytes32(abi.encodePacked(bytes20(txAllowances[i].to), txAllowances[i].selector));
-            s_allowedTxs.add(txId);
-            s_allowance[txId] = txAllowances[i].amount;
+            _setTxAllowed(txAllowances[i], true);
         }
 
         s_safe = ISafe(safe);
@@ -233,6 +236,10 @@ contract SAMM is Singleton, ISAMM {
             revert SAMM__rootIsZero();
         }
 
+        if (membersRoot >= 2**254) {
+            revert SAMM__rootOutOfField();
+        }
+
         s_membersRoot = membersRoot;
 
         emit MembersRootIsChanged(membersRoot);
@@ -284,24 +291,10 @@ contract SAMM is Singleton, ISAMM {
      * @param isAllowed Boolean: 1 if the transaction is allowed, 0 if the transaction is not allowed anymore.
      */
     function setTxAllowed(TxAllowance calldata txAllowance, bool isAllowed) external {
-        address _safe = address(s_safe);
-        if (msg.sender != _safe) {
+        if (msg.sender != address(s_safe)) {
             revert SAMM__notSafe();
         }
-        if (txAllowance.to == _safe || txAllowance.to == address(0)) {
-            revert SAMM__toIsWrong();
-        }
-        bool success;
-        bytes32 txId = bytes32(abi.encodePacked(bytes20(txAllowance.to), txAllowance.selector));
-        if (isAllowed) {
-            success = s_allowedTxs.add(txId);
-            s_allowance[txId] = txAllowance.amount;
-        } else {
-            success = s_allowedTxs.remove(txId);
-            s_allowance[txId] = 0;
-        }
-        if (!success) revert SAMM__noChanges();
-        emit TxAllowanceChanged(txId, txAllowance.amount, isAllowed);
+        _setTxAllowed(txAllowance, isAllowed);
     }
 
     /**
@@ -372,13 +365,15 @@ contract SAMM is Singleton, ISAMM {
 
         address to;
         bytes4 selector;
+        ISafe.Operation operation;
         uint256 amount;
         for (uint256 i; i < allowedTxs.length; i++) {
             // decode allowedTxs storage
             to = address(bytes20(allowedTxs[i]));
             selector = bytes4(allowedTxs[i] << 160);
+            operation = IMinimalSafeModuleManager.Operation(uint8(bytes1(allowedTxs[i] << 192)));
             amount = s_allowance[allowedTxs[i]];
-            txAllowances[i] = TxAllowance(to, selector, amount);
+            txAllowances[i] = TxAllowance(to, selector, amount, operation);
         }
         return txAllowances;
     }
@@ -428,11 +423,11 @@ contract SAMM is Singleton, ISAMM {
         }
 
         // Check tx allowance
-        _checkTxAllowance(to, value, data);
+        _checkTxAllowance(to, value, data, operation);
 
-        // pubSignals = [root, relayer, relayer_len, msg_hash, pubkey_mod, redc_params]
+        // pubSignals = [root, domain, domain_len, relayer, relayer_len, relayer_addr, msg_hash, pubkey_mod, redc_params]
         bytes32[] memory pubSignals =
-            PubSignalsConstructor.getPubSignals(root, s_relayer, to, value, data, operation, s_nonce++, deadline);
+            PubSignalsConstructor.getPubSignals(root, s_relayer, msg.sender, to, value, data, operation, s_nonce++, deadline);
 
         if (s_threshold > proofs.length) {
             revert SAMM__notEnoughProofs(proofs.length, s_threshold);
@@ -443,12 +438,29 @@ contract SAMM is Singleton, ISAMM {
         return s_safe.execTransactionFromModuleReturnData(to, value, data, operation);
     }
 
-    function _checkTxAllowance(address to, uint256 value, bytes memory data) private view {
+    function _setTxAllowed(TxAllowance calldata txAllowance, bool isAllowed) private {
+        if (txAllowance.to == address(s_safe) || txAllowance.to == address(0)) {
+            revert SAMM__toIsWrong();
+        }
+        bool success;
+        bytes32 txId = bytes32(abi.encodePacked(bytes20(txAllowance.to), txAllowance.selector, uint8(txAllowance.operation)));
+        if (isAllowed) {
+            success = s_allowedTxs.add(txId);
+            s_allowance[txId] = txAllowance.amount;
+        } else {
+            success = s_allowedTxs.remove(txId);
+            s_allowance[txId] = 0;
+        }
+        if (!success) revert SAMM__noChanges();
+        emit TxAllowanceChanged(txId, txAllowance.amount, isAllowed);
+    }
+
+    function _checkTxAllowance(address to, uint256 value, bytes memory data, ISafe.Operation operation) private view {
         bytes4 selector;
         assembly {
             selector := mload(add(data, 0x20))
         }
-        bytes32 txId = bytes32(abi.encodePacked(bytes20(to), selector));
+        bytes32 txId = bytes32(abi.encodePacked(bytes20(to), selector, uint8(operation)));
         if (!s_allowedTxs.contains(txId)) {
             revert SAMM__txIsNotAllowed();
         }
@@ -472,12 +484,17 @@ contract SAMM is Singleton, ISAMM {
             // Commit must be uniq, because it is a hash(userEmail, msgHash)
             for (uint256 j; j < i; j++) {
                 if (proofs[j].commit == currentProof.commit) {
-                    revert SAMM__commitAlreadyUsed(i);
+                    revert SAMM__commitAlreadyUsed(j);
                 }
             }
 
-            pubSignals[170] = bytes32(currentProof.commit);
-            pubSignals[171] = currentProof.pubkeyHash;
+            bytes memory domainBytes = bytes(currentProof.domain);
+            for (uint256 i = 0; i < domainBytes.length; i++) {
+                pubSignals[1 + i] = bytes32(uint256(uint8(domainBytes[i])));
+            }
+            pubSignals[25] = bytes32(uint256(domainBytes.length));
+            pubSignals[196] = bytes32(currentProof.commit);
+            pubSignals[197] = currentProof.pubkeyHash;
             bool result;
             if (currentProof.is2048sig) {
                 result = VERIFIER2048.verify({proof: currentProof.proof, publicInputs: pubSignals});

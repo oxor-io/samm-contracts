@@ -36,4 +36,5 @@ interface ISAMMErrors {
     error SAMM__txIsNotAllowed();
     error SAMM__allowanceIsNotEnough();
     error SAMM__longRelayer();
+    error SAMM__rootOutOfField();
 }

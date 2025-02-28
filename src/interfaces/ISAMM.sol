@@ -36,6 +36,7 @@ interface ISAMM is ISAMMEvents, ISAMMErrors, ISAMMGetters {
         address to;
         bytes4 selector;
         uint256 amount;
+        ISafe.Operation operation;
     }
 
     function setup(
