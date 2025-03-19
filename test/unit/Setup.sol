@@ -3,7 +3,6 @@ pragma solidity 0.8.23;
 
 import {Test} from "forge-std/Test.sol";
 import {SAMM, ISAMM} from "../../src/SAMM.sol";
-import {ModuleGuard} from "../../src/ModuleGuard.sol";
 import {SafeProxyFactory} from "../../src/Safe/proxy/SafeProxyFactory.sol";
 
 import {ISafe} from "../../src/Safe/interfaces/ISafe.sol";
@@ -48,11 +47,6 @@ contract Setup is Test {
     SAMM internal sam;
     SAMM internal samSingleton;
     SafeProxyFactory internal samProxyFactory;
-
-    // Guard
-    ModuleGuard internal guard;
-    ModuleGuard internal guardSingleton;
-    SafeProxyFactory internal guardProxyFactory;
 
     //////////////////////
     //    Modifiers     //
@@ -106,23 +100,10 @@ contract Setup is Test {
         vm.prank(address(safe));
         ISAMM.TxAllowance memory txAllowance = ISAMM.TxAllowance(DEFAULT_TO, selector, 0, IMinimalSafeModuleManager.Operation.Call);
         sam.setTxAllowed(txAllowance, true);
-
-        // Create Guard module
-        guardSingleton = new ModuleGuard();
-        guardProxyFactory = new SafeProxyFactory();
-
-        bytes memory initializeDataGuard = abi.encodeCall(ModuleGuard.setup, (address(safe)));
-        guard = createGuard(initializeDataGuard, DEFAULT_SALT);
     }
 
     function createSAM(bytes memory initData, uint256 salt) internal returns (SAMM newSAM) {
         return SAMM(address(samProxyFactory.createChainSpecificProxyWithNonce(address(samSingleton), initData, salt)));
-    }
-
-    function createGuard(bytes memory initData, uint256 salt) internal returns (ModuleGuard newGuard) {
-        return ModuleGuard(
-            address(guardProxyFactory.createChainSpecificProxyWithNonce(address(guardSingleton), initData, salt))
-        );
     }
 
     // Create Safe wallet with minimal settings
